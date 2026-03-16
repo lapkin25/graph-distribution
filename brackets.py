@@ -48,19 +48,25 @@ def get_bracket(G, source, destination):
 
 def tree_search(br, coefs, product):
     print(f"Вершина {br.node}: {len(br.branches)} разветвлений: {br.edges}")
-    print(coefs)
+    print(coefs, product)
     if len(br.branches) == 0:
-        return 0.0
+        return 0.0, 0
     lam = 1.0 / len(br.branches)
+    num_coef = 0
+    if len(br.branches) > 1:
+        num_coef += len(br.branches)
     for i in range(len(br.branches)):
         coefs[br.edges[i]] += product * lam
-        tree_search(br.branches[i], coefs, product * lam)
-    return sum([x ** 2 for x in coefs])
+        num_coef += tree_search(br.branches[i], coefs, product * lam)[1]
+    return sum([x ** 2 for x in coefs]), num_coef
 
 def calc_variance_uniformly(br):
     coefs = [0.0] * len(G.edges)
-    return tree_search(br, coefs, 1.0)
+    return tree_search(br, coefs, 1.0)[0]
 
+def calc_lambdas(br):
+    coefs = [0.0] * len(G.edges)
+    return tree_search(br, coefs, 1.0)[1]
 
 
 G = nx.Graph()
@@ -79,3 +85,4 @@ br = get_bracket(G, 1, 6)
 br.print()
 print("Рёбра:", G.edges)
 print(calc_variance_uniformly(br))
+print(calc_lambdas(br))
