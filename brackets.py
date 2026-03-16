@@ -1,5 +1,6 @@
 import networkx as nx
 from scipy.optimize import Bounds, LinearConstraint, minimize
+import numpy as np
 
 
 class Bracket:
@@ -73,7 +74,11 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
         if len(br.branches) > 1:
             uniform_lambdas[lam_count + i] = lam
         coefs[br.edges[i]] += product * lam
-        num_coef += tree_search(br.branches[i], coefs, product * lam, lam_count + len(br.branches), uniform_lambdas, lambdas, lambdas_groups)[1]
+        if len(br.branches) > 1:
+            new_lam_count = lam_count + len(br.branches)
+        else:
+            new_lam_count = lam_count
+        num_coef += tree_search(br.branches[i], coefs, product * lam, new_lam_count, uniform_lambdas, lambdas, lambdas_groups)[1]
     return sum([x ** 2 for x in coefs]), num_coef
 
 def calc_variance_uniformly(br):
@@ -141,4 +146,29 @@ res = minimize(f, init_lambdas, method='trust-constr',
 print(res.fun)
 print(res.x)
 
-
+"""
+mat = np.zeros((len(G.nodes), len(G.nodes)))
+for v1 in G.nodes:
+    for v2 in G.nodes:
+        if v1 == v2:
+            continue
+        br = get_bracket(G, v1, v2)
+        br.print()
+        num_lambdas = count_lambdas(br)
+        init_lambdas, lambdas_groups = calc_init_lambdas(br)
+        bounds = Bounds([0] * num_lambdas, [1] * num_lambdas)
+        A = []
+        num_coef = 0
+        for gr in lambdas_groups:
+            row = [0] * num_lambdas
+            for i in range(num_coef, num_coef + gr):
+                row[i] = 1
+            num_coef += gr
+            A.append(row)
+        linear_constraint = LinearConstraint(A, [1] * len(lambdas_groups), [1] * len(lambdas_groups))
+        res = minimize(f, init_lambdas, method='trust-constr',
+            constraints=linear_constraint, options={'verbose': 0}, bounds=bounds)
+        print(v1, v2, res.fun)
+        mat[v1 - 1, v2 - 1] = res.fun
+print(mat)
+"""
