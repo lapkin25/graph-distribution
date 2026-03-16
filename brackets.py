@@ -114,10 +114,17 @@ def f(lambdas):
     return tree_search(br, coefs, 1.0, 0, dummy, lambdas)[0]
 
 G = nx.Graph()
-
+"""
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
+"""
+
+G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+G.add_edges_from([(1, 2), (1, 3), (2, 4), (1, 4), (1, 5), (2, 3), (2, 6),
+                  (3, 4), (3, 6), (4, 5), (4, 6), (5, 6), (5, 9), (5, 11),
+                  (7, 8), (7, 10), (7, 9), (8, 9), (8, 10), (9, 10),
+                  (11, 12), (11, 14), (12, 14), (13, 14), (11, 13), (12, 13)])
 
 
 #G = nx.karate_club_graph()
@@ -160,7 +167,7 @@ print(res.fun)
 np.set_printoptions(precision=3, suppress=True)
 print(res.x)
 
-"""
+
 mat = np.zeros((len(G.nodes), len(G.nodes)))
 for v1 in G.nodes:
     for v2 in G.nodes:
@@ -185,4 +192,3 @@ for v1 in G.nodes:
         print(v1, v2, res.fun)
         mat[v1 - 1, v2 - 1] = res.fun
 print(mat)
-"""
