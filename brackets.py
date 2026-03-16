@@ -66,7 +66,10 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
         if lambdas is None:
             lam = uniform_lam
         else:
-            lam = lambdas[lam_count + i]
+            if len(br.branches) == 1:
+                lam = 1.0
+            else:
+                lam = lambdas[lam_count + i]
         if len(br.branches) > 1:
             uniform_lambdas[lam_count + i] = lam
         coefs[br.edges[i]] += product * lam
