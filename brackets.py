@@ -136,7 +136,7 @@ for i, e in enumerate(G.edges):
     G.edges[e]['num'] = i
     edges_list.append(e)
 
-br = get_bracket(G, 1, 6)
+br = get_bracket(G, 5, 9)
 #br.print()
 print("Рёбра:", G.edges)
 #print(calc_variance_uniformly(br))
@@ -157,11 +157,17 @@ for gr in lambdas_groups:
     num_coef += gr
     A.append(row)
 #print(A)
-linear_constraint = LinearConstraint(A, [1] * len(lambdas_groups), [1] * len(lambdas_groups))
+#print(lambdas_groups)
+if len(lambdas_groups) == 0:
+    linear_constraint = None
+    method = 'Nelder-Mead'
+else:
+    linear_constraint = LinearConstraint(A, [1] * len(lambdas_groups), [1] * len(lambdas_groups))
+    method = 'trust-constr'
 
 print("init = ", f(init_lambdas))
 
-res = minimize(f, init_lambdas, method='trust-constr',
+res = minimize(f, init_lambdas, method=method,
                constraints=linear_constraint, options={'verbose': 1}, bounds=bounds)
 print(res.fun)
 np.set_printoptions(precision=3, suppress=True)
@@ -186,8 +192,13 @@ for v1 in G.nodes:
                 row[i] = 1
             num_coef += gr
             A.append(row)
-        linear_constraint = LinearConstraint(A, [1] * len(lambdas_groups), [1] * len(lambdas_groups))
-        res = minimize(f, init_lambdas, method='trust-constr',
+        if len(lambdas_groups) == 0:
+            linear_constraint = None
+            method = 'Nelder-Mead'
+        else:
+            linear_constraint = LinearConstraint(A, [1] * len(lambdas_groups), [1] * len(lambdas_groups))
+            method = 'trust-constr'
+        res = minimize(f, init_lambdas, method=method,
             constraints=linear_constraint, options={'verbose': 0}, bounds=bounds)
         print(v1, v2, res.fun)
         mat[v1 - 1, v2 - 1] = res.fun
