@@ -48,16 +48,23 @@ def backtracking(G, source, current, stack):
 def get_bracket(G, source, destination):
     return backtracking(G, source, destination, [destination])
 
-def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None):
+def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None, verbose=False, indentation=0):
     # TODO: передать еще префикс маршрута, чтобы узнать, что значит конкретная lambda
-    #print(f"Вершина {br.node}: {len(br.branches)} разветвлений: {br.edges}")
-    #print(coefs, product)
+    # TODO: написать для этого метод класса Bracket, отвечающий за структуру дерева
+    if verbose:
+        #print(' ' * indentation, "lam_count =", lam_count)
+        print(' ' * indentation, f"Вершина {br.node}: {len(br.branches)} разветвлений: ребра {br.edges} в вершины {br.adj_nodes}")
+        #print(coefs, product)
     if len(br.branches) == 0:
         return 0.0, 0
     if lambdas is None:
         uniform_lam = 1.0 / len(br.branches)
     num_coef = 0
     if len(br.branches) > 1:
+        if verbose:
+            for i in range(len(br.branches)):
+                print(' ' * indentation, f"lambda[{lam_count + i}] ", end='')
+            print()
         num_coef += len(br.branches)
         for i in range(len(br.branches)):
             uniform_lambdas.append(0.0)
@@ -78,7 +85,8 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
             new_lam_count = lam_count + len(br.branches)
         else:
             new_lam_count = lam_count
-        num_coef += tree_search(br.branches[i], coefs, product * lam, new_lam_count, uniform_lambdas, lambdas, lambdas_groups)[1]
+        #num_coef += tree_search(br.branches[i], coefs, product * lam, new_lam_count, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)[1]
+        num_coef += tree_search(br.branches[i], coefs, product * lam, lam_count + num_coef, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)[1]
     return sum([x ** 2 for x in coefs]), num_coef
 
 def calc_variance_uniformly(br):
@@ -97,10 +105,10 @@ def calc_init_lambdas(br):
 
 def count_lambdas(br):
     coefs = [0.0] * len(G.edges)
-    return tree_search(br, coefs, 1.0, 0, [])[1]
+    return tree_search(br, coefs, 1.0, 0, [], verbose=True)[1]
 
 def f(lambdas):
-    print("lambdas =", lambdas)
+    #print("lambdas =", lambdas)
     coefs = [0.0] * len(G.edges)
     dummy = []
     return tree_search(br, coefs, 1.0, 0, dummy, lambdas)[0]
@@ -111,6 +119,10 @@ G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
+
+#G = nx.karate_club_graph()
+
+
 # нумерация ребер графа
 edges_list = []
 for i, e in enumerate(G.edges):
@@ -118,13 +130,14 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 br = get_bracket(G, 1, 6)
-br.print()
+#br.print()
 print("Рёбра:", G.edges)
 #print(calc_variance_uniformly(br))
 
 num_lambdas = count_lambdas(br)
 init_lambdas, lambdas_groups = calc_init_lambdas(br)
-print(init_lambdas, lambdas_groups)
+#print(init_lambdas, lambdas_groups)
+print(num_lambdas)
 
 bounds = Bounds([0] * num_lambdas, [1] * num_lambdas)
 
@@ -144,6 +157,7 @@ print("init = ", f(init_lambdas))
 res = minimize(f, init_lambdas, method='trust-constr',
                constraints=linear_constraint, options={'verbose': 1}, bounds=bounds)
 print(res.fun)
+np.set_printoptions(precision=3, suppress=True)
 print(res.x)
 
 """
