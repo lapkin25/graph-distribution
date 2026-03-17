@@ -119,6 +119,8 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
                 lam = lam_coefs[j]
                 for k in range(len(G.edges)):
                     terms[k] += lam * branch_coefs[j, k]
+            #print("lam_coefs =", lam_coefs, "branch_coefs =", branch_coefs)
+            #print("terms =", terms, "obj =", np.sum(terms ** 2))
             ans = np.sum(terms ** 2)
             return ans
 
@@ -132,6 +134,9 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
             res = minimize(g, lams, method=method,
                            constraints=linear_constraint, options={'verbose': 0}, bounds=bounds)
             lams = res.x
+
+        #print(' ' * indentation, "lams =", lams)
+        #print(' ' * indentation, "branch_coefs =", branch_coefs)
         new_coefs = np.dot(lams, branch_coefs)
         if len(br.branches) > 1:
             for i in range(len(br.branches)):
@@ -179,7 +184,7 @@ def calc_suboptimal_lambdas(br, lambdas_count):
     coefs = [0.0] * len(G.edges)
     uniform_lambdas = []
     lambdas = np.zeros(lambdas_count)
-    variance, num_coef, new_coefs = tree_search(br, coefs, 1.0, 0, uniform_lambdas, None, suboptimal_lambdas=lambdas)
+    variance, num_coef, new_coefs = tree_search(br, coefs, 1.0, 0, uniform_lambdas, None, suboptimal_lambdas=lambdas, verbose=False)
     print("new_coefs =", new_coefs)
     print("variance =", variance)
     print("lambdas =", lambdas)
@@ -187,19 +192,19 @@ def calc_suboptimal_lambdas(br, lambdas_count):
 
 
 G = nx.Graph()
-
+"""
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
-
-
 """
+
+
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 G.add_edges_from([(1, 2), (1, 3), (2, 4), (1, 4), (1, 5), (2, 3), (2, 6),
                   (3, 4), (3, 6), (4, 5), (4, 6), (5, 6), (5, 9), (5, 11),
                   (7, 8), (7, 10), (7, 9), (8, 9), (8, 10), (9, 10),
                   (11, 12), (11, 14), (12, 14), (13, 14), (11, 13), (12, 13)])
-"""
+
 
 #G = nx.karate_club_graph()
 
@@ -210,7 +215,7 @@ for i, e in enumerate(G.edges):
     G.edges[e]['num'] = i
     edges_list.append(e)
 
-br = get_bracket(G, 1, 6)
+br = get_bracket(G, 1, 9)
 #br.print()
 print("Рёбра:", G.edges)
 #print(calc_variance_uniformly(br))
