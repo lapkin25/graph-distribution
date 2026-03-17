@@ -177,7 +177,7 @@ def f(lambdas):
     #print("lambdas =", lambdas)
     coefs = [0.0] * len(G.edges)
     dummy = []
-    return tree_search(br, coefs, 1.0, 0, dummy, lambdas)[0]
+    return tree_search(br, coefs, 1.0, 0, dummy, lambdas, verbose=False)[0]
 
 
 def calc_suboptimal_lambdas(br, lambdas_count):
@@ -198,15 +198,15 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 """
 
-
+"""
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 G.add_edges_from([(1, 2), (1, 3), (2, 4), (1, 4), (1, 5), (2, 3), (2, 6),
                   (3, 4), (3, 6), (4, 5), (4, 6), (5, 6), (5, 9), (5, 11),
                   (7, 8), (7, 10), (7, 9), (8, 9), (8, 10), (9, 10),
                   (11, 12), (11, 14), (12, 14), (13, 14), (11, 13), (12, 13)])
+"""
 
-
-#G = nx.karate_club_graph()
+G = nx.karate_club_graph()
 
 
 # нумерация ребер графа
@@ -225,6 +225,7 @@ init_lambdas, lambdas_groups = calc_init_lambdas(br)
 #print(init_lambdas, lambdas_groups)
 print(num_lambdas)
 
+"""
 print("Субоптимальное решение:")
 print(f(calc_suboptimal_lambdas(br, num_lambdas)))
 
@@ -255,8 +256,9 @@ res = minimize(f, init_lambdas, method=method,
 print(res.fun)
 np.set_printoptions(precision=3, suppress=True)
 print(res.x)
-
 """
+
+np.set_printoptions(precision=3, suppress=True)
 mat = np.zeros((len(G.nodes), len(G.nodes)))
 for v1 in G.nodes:
     for v2 in G.nodes:
@@ -266,6 +268,7 @@ for v1 in G.nodes:
         br.print()
         num_lambdas = count_lambdas(br)
         init_lambdas, lambdas_groups = calc_init_lambdas(br)
+        """
         bounds = Bounds([0] * num_lambdas, [1] * num_lambdas)
         A = []
         num_coef = 0
@@ -285,5 +288,9 @@ for v1 in G.nodes:
             constraints=linear_constraint, options={'verbose': 0}, bounds=bounds)
         print(v1, v2, res.fun)
         mat[v1 - 1, v2 - 1] = res.fun
+        """
+        f_init = f(init_lambdas)
+        print(v1, v2, f_init)
+        #mat[v1 - 1, v2 - 1] = f_init
+        mat[v1, v2] = f_init
 print(mat)
-"""
