@@ -48,7 +48,7 @@ def backtracking(G, source, current, stack):
 def get_bracket(G, source, destination):
     return backtracking(G, source, destination, [destination])
 
-def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None, verbose=False, indentation=0):
+def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None, verbose=False, indentation=0): #, suboptimal_lambdas=None):
     # TODO: передать еще префикс маршрута, чтобы узнать, что значит конкретная lambda
     # TODO: написать для этого метод класса Bracket, отвечающий за структуру дерева
     if verbose:
@@ -70,6 +70,7 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
             uniform_lambdas.append(0.0)
         if lambdas_groups is not None:
             lambdas_groups.append(len(br.branches))
+    #branch_coefs = [0.0] * len(G.edges)
     for i in range(len(br.branches)):
         if lambdas is None:
             lam = uniform_lam
@@ -81,13 +82,15 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
         if len(br.branches) > 1:
             uniform_lambdas[lam_count + i] = lam
         coefs[br.edges[i]] += product * lam
+        #branch_coefs[br.edges[i]] += product * lam
         if len(br.branches) > 1:
             new_lam_count = lam_count + len(br.branches)
         else:
             new_lam_count = lam_count
         #num_coef += tree_search(br.branches[i], coefs, product * lam, new_lam_count, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)[1]
-        num_coef += tree_search(br.branches[i], coefs, product * lam, lam_count + num_coef, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)[1]
-    return sum([x ** 2 for x in coefs]), num_coef
+        res = tree_search(br.branches[i], coefs, product * lam, lam_count + num_coef, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)
+        num_coef += res[1]
+    return sum([x ** 2 for x in coefs]), num_coef  #, branch_coefs
 
 def calc_variance_uniformly(br):
     coefs = [0.0] * len(G.edges)
@@ -113,19 +116,29 @@ def f(lambdas):
     dummy = []
     return tree_search(br, coefs, 1.0, 0, dummy, lambdas)[0]
 
-G = nx.Graph()
 """
+def calc_suboptimal_lambdas(br):
+    coefs = [0.0] * len(G.edges)
+    uniform_lambdas = []
+    lambdas = []
+    tree_search(br, coefs, 1.0, 0, uniform_lambdas, None, suboptimal_lambdas=lambdas)
+    return lambdas
+"""
+
+G = nx.Graph()
+
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
-"""
 
+
+"""
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 G.add_edges_from([(1, 2), (1, 3), (2, 4), (1, 4), (1, 5), (2, 3), (2, 6),
                   (3, 4), (3, 6), (4, 5), (4, 6), (5, 6), (5, 9), (5, 11),
                   (7, 8), (7, 10), (7, 9), (8, 9), (8, 10), (9, 10),
                   (11, 12), (11, 14), (12, 14), (13, 14), (11, 13), (12, 13)])
-
+"""
 
 #G = nx.karate_club_graph()
 
@@ -136,7 +149,7 @@ for i, e in enumerate(G.edges):
     G.edges[e]['num'] = i
     edges_list.append(e)
 
-br = get_bracket(G, 5, 9)
+br = get_bracket(G, 1, 6)
 #br.print()
 print("Рёбра:", G.edges)
 #print(calc_variance_uniformly(br))
@@ -173,7 +186,7 @@ print(res.fun)
 np.set_printoptions(precision=3, suppress=True)
 print(res.x)
 
-
+"""
 mat = np.zeros((len(G.nodes), len(G.nodes)))
 for v1 in G.nodes:
     for v2 in G.nodes:
@@ -203,3 +216,4 @@ for v1 in G.nodes:
         print(v1, v2, res.fun)
         mat[v1 - 1, v2 - 1] = res.fun
 print(mat)
+"""
