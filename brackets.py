@@ -48,7 +48,7 @@ def backtracking(G, source, current, stack):
 def get_bracket(G, source, destination):
     return backtracking(G, source, destination, [destination])
 
-def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None, verbose=False, indentation=0, suboptimal_lambdas=None):
+def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, lambdas_groups=None, verbose=False, indentation=0, suboptimal_lambdas=None, nodes_var=None, sub_coefs=None):
     # TODO: передать еще префикс маршрута, чтобы узнать, что значит конкретная lambda
     # TODO: написать для этого метод класса Bracket, отвечающий за структуру дерева
     if verbose:
@@ -56,7 +56,7 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
         print(' ' * indentation, f"Вершина {br.node}: {len(br.branches)} разветвлений: ребра {br.edges} в вершины {br.adj_nodes}")
         #print(coefs, product)
     if len(br.branches) == 0:
-        return 0.0, 0, np.zeros(len(G.edges))
+        return 0.0, 0, np.zeros(len(G.edges)), 0.0, np.zeros(len(G.edges))
     if lambdas is None:
         uniform_lam = 1.0 / len(br.branches)
     num_coef = 0
@@ -72,6 +72,15 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
             lambdas_groups.append(len(br.branches))
     branch_coefs = np.zeros((len(br.branches), len(G.edges)))
     lambda_ind = [0.0] * len(br.branches)
+
+
+    #if sub_coefs is not None:
+    #    sub_coefs = [0.0] * len(G.edges)
+
+    cur_coefs = [0.0] * len(G.edges)
+
+    sum_var = 0.0  # TODO: убрать эту переменную
+
     for i in range(len(br.branches)):
         if lambdas is None:
             lam = uniform_lam
@@ -83,13 +92,33 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
         if len(br.branches) > 1:
             uniform_lambdas[lam_count + i] = lam
         coefs[br.edges[i]] += product * lam
+
+        cur_coefs[br.edges[i]] += product * lam
+
+        #if sub_coefs is not None:
+        #    sub_coefs[br.edges[i]] += product * lam
+        #cur_coefs[br.edges[i]] += product * lam
+
         #branch_coefs[br.edges[i]] += product * lam
         if len(br.branches) > 1:
             new_lam_count = lam_count + len(br.branches)
         else:
             new_lam_count = lam_count
         #num_coef += tree_search(br.branches[i], coefs, product * lam, new_lam_count, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1)[1]
-        res = tree_search(br.branches[i], coefs, product * lam, lam_count + num_coef, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1, suboptimal_lambdas)
+        res = tree_search(br.branches[i], coefs, product * lam, lam_count + num_coef, uniform_lambdas, lambdas, lambdas_groups, verbose, indentation + 1, suboptimal_lambdas, nodes_var=nodes_var, sub_coefs=sub_coefs)
+        #coefs[br.edges[i]] += product * lam
+        #print("lam = ", lam)
+        if suboptimal_lambdas is None:
+            #print("res[2] =", res[2])
+           # print("res[3] =", res[3])
+            sum_var += (res[3] + 1) * lam ** 2
+            cur_coefs += res[4]
+
+        #if sub_coefs is not None:
+        #    sub_coefs[br.edges[i]] -= product * lam
+            #sub_coefs[br.edges[i]] += product * lam
+
+
         num_coef += res[1]
         if suboptimal_lambdas is not None:
             #print(res[2])
@@ -97,7 +126,13 @@ def tree_search(br, coefs, product, lam_count, uniform_lambdas, lambdas=None, la
             branch_coefs[i, br.edges[i]] += 1
             lambda_ind[i] = lam_count + i
     if suboptimal_lambdas is None:
-        return sum([x ** 2 for x in coefs]), num_coef
+        #print("node =", br.node, " coefs =", coefs)
+        if sub_coefs is not None:
+            #print("sum_var =", sum_var)
+            #nodes_var[br.node].append(float(sum([x ** 2 for x in sub_coefs])))
+            #nodes_var[br.node].append(float(sum_var))
+            nodes_var[br.node].append(float(sum([x ** 2 for x in cur_coefs])))
+        return sum([x ** 2 for x in coefs]), num_coef, None, sum_var, np.array(cur_coefs)
     else:
         # находим субоптимальные lambda[k]
         new_coefs = np.zeros(len(G.edges))
@@ -166,18 +201,22 @@ def calc_init_lambdas(br):
     coefs = [0.0] * len(G.edges)
     lambdas = []
     groups = []
-    tree_search(br, coefs, 1.0, 0, lambdas, None, groups)
+    nodes_var = [[] for _ in range(len(G.nodes) + 1)]
+    tree_search(br, coefs, 1.0, 0, lambdas, None, groups, nodes_var=nodes_var)
     return lambdas, groups
 
 def count_lambdas(br):
     coefs = [0.0] * len(G.edges)
-    return tree_search(br, coefs, 1.0, 0, [], verbose=True)[1]
+    nodes_var = [[] for _ in range(len(G.nodes) + 1)]
+    return tree_search(br, coefs, 1.0, 0, [], verbose=True, nodes_var=nodes_var)[1]
 
 def f(lambdas):
     #print("lambdas =", lambdas)
     coefs = [0.0] * len(G.edges)
+    sub_coefs = [0.0] * len(G.edges)
     dummy = []
-    return tree_search(br, coefs, 1.0, 0, dummy, lambdas, verbose=False)[0]
+    nodes_var = [[] for _ in range(len(G.nodes) + 1)]
+    return tree_search(br, coefs, 1.0, 0, dummy, lambdas, verbose=False, nodes_var=nodes_var, sub_coefs=sub_coefs)[0]
 
 
 def calc_suboptimal_lambdas(br, lambdas_count):
@@ -192,11 +231,11 @@ def calc_suboptimal_lambdas(br, lambdas_count):
 
 
 G = nx.Graph()
-"""
+
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
-"""
+
 
 """
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
@@ -206,7 +245,7 @@ G.add_edges_from([(1, 2), (1, 3), (2, 4), (1, 4), (1, 5), (2, 3), (2, 6),
                   (11, 12), (11, 14), (12, 14), (13, 14), (11, 13), (12, 13)])
 """
 
-G = nx.karate_club_graph()
+#G = nx.karate_club_graph()
 
 
 # нумерация ребер графа
@@ -215,7 +254,7 @@ for i, e in enumerate(G.edges):
     G.edges[e]['num'] = i
     edges_list.append(e)
 
-br = get_bracket(G, 1, 9)
+br = get_bracket(G, 1, 7)
 #br.print()
 print("Рёбра:", G.edges)
 #print(calc_variance_uniformly(br))
@@ -225,7 +264,7 @@ init_lambdas, lambdas_groups = calc_init_lambdas(br)
 #print(init_lambdas, lambdas_groups)
 print(num_lambdas)
 
-"""
+
 print("Субоптимальное решение:")
 print(f(calc_suboptimal_lambdas(br, num_lambdas)))
 
@@ -256,6 +295,17 @@ res = minimize(f, init_lambdas, method=method,
 print(res.fun)
 np.set_printoptions(precision=3, suppress=True)
 print(res.x)
+
+nodes_var = [[] for _ in range(len(G.nodes) + 1)]
+coefs = [0.0] * len(G.edges)
+sub_coefs = [0.0] * len(G.edges)
+dummy = []
+ans = tree_search(br, coefs, 1.0, 0, dummy, res.x, verbose=False, nodes_var=nodes_var, sub_coefs=sub_coefs)
+print("nodes_var =", nodes_var)
+print("cur_coefs =", ans[4])
+#print(sum(x ** 2 for x in ans[4]))
+
+
 """
 
 np.set_printoptions(precision=3, suppress=True)
@@ -268,7 +318,7 @@ for v1 in G.nodes:
         br.print()
         num_lambdas = count_lambdas(br)
         init_lambdas, lambdas_groups = calc_init_lambdas(br)
-        """
+
         bounds = Bounds([0] * num_lambdas, [1] * num_lambdas)
         A = []
         num_coef = 0
@@ -288,9 +338,11 @@ for v1 in G.nodes:
             constraints=linear_constraint, options={'verbose': 0}, bounds=bounds)
         print(v1, v2, res.fun)
         mat[v1 - 1, v2 - 1] = res.fun
-        """
-        f_init = f(init_lambdas)
-        print(v1, v2, f_init)
+
+        #f_init = f(init_lambdas)
+        #print(v1, v2, f_init)
         #mat[v1 - 1, v2 - 1] = f_init
-        mat[v1, v2] = f_init
+        #mat[v1, v2] = f_init
 print(mat)
+
+"""
