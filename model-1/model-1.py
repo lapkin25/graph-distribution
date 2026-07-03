@@ -5,6 +5,9 @@ G = nx.Graph()
 G.add_nodes_from([1, 2, 3, 4])
 G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
+source = 1
+destination = 4
+
 
 def get_initial_orientation(G):
     """
@@ -38,7 +41,26 @@ def is_orientation_correct(orientation, start, finish):
       д) вершина finish достижима из вершины start
       е) в графе нет циклов
     """
-    pass
+    # а)
+    if not all([orientation.in_degree(v) != 0 for v in orientation.nodes() if v != start]):
+        return False
+    # б)
+    if not all([orientation.out_degree(v) != 0 for v in orientation.nodes() if v != finish]):
+        return False
+    # в)
+    if orientation.in_degree(start) > 0:
+        return False
+    # г)
+    if orientation.out_degree(finish) > 0:
+        return False
+    # д)
+    if not nx.has_path(orientation, start, finish):
+        return False
+    # е)
+    if not nx.is_directed_acyclic_graph(orientation):
+        return False
+    # если все условия а)-е) выполняются
+    return True
 
 
 def calc_variance(orientation, alpha, start):
@@ -47,6 +69,18 @@ def calc_variance(orientation, alpha, start):
           alpha - вектор коэффициентов (на всех рёбрах)
           start - начальная вершина
     Выход: variance - вектор дисперсий сигнала во всех вершинах
+    """
+    pass
+
+
+def optimize_coefs(orientation, initial_alpha, start, finish):
+    """
+    Вход: orientation - орграф (ориентировка)
+          initial_alpha - начальное приближение для вектора коэффициентов (на всех рёбрах)
+          start - начальная вершина
+          finish - конечная вершина
+    Выход: optimal_alpha - оптимальный вектор коэффициентов, обеспечивающий
+      минимум дисперсии сигнала в конечной вершине
     """
     pass
 
@@ -64,5 +98,6 @@ def optimize_orientation(graph, start, finish):
 
 
 orientation0 = get_initial_orientation(G)
-#print(orientation0)
+optimal_orientation = optimize_orientation(G, source, destination)
+
 
