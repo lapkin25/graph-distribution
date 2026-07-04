@@ -79,7 +79,6 @@ def calc_variance(orientation, alpha, start, finish):
           finish - конечная вершина
     Выход: variance - вектор дисперсий сигнала во всех вершинах
     """
-    print(alpha)
     # проверить корректность ориентировки
     if not is_orientation_correct(orientation, start, finish):
         raise
@@ -98,7 +97,7 @@ def calc_variance(orientation, alpha, start, finish):
             alpha_v = alpha[data['num']]  # коэффициент на ребре (v, u)
             # рассчитываем коэффициенты в вершине u
             beta[u] += alpha_v * beta[v]
-            beta[u][data['num']] += 1  # единичная дисперсия всех шумов
+            beta[u][data['num']] += alpha_v * 1.0  # единичная дисперсия всех шумов
             # TODO: поменять 1 на произвольные числа на рёбрах
 
     # Вычислить дисперсии во всех вершинах как сумму квадратов коэффициентов...
@@ -148,7 +147,7 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     bounds = Bounds([0] * len_alpha, [1] * len_alpha)
     # линейные ограничения: сумма переменных по входящим рёбрам равна 1
     # - заполняем матрицу A: строки - это ограничения, столбцы - это переменные
-    num_constraints = sum([orientation.in_degree(v) for v in orientation.nodes()])
+    num_constraints = sum([1 for v in orientation.nodes() if orientation.in_degree(v) > 0])
     A = np.zeros((num_constraints, len_alpha))
     k = 0  # счётчик ограничений
     for u in orientation.nodes():
@@ -158,6 +157,7 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
                 # v - вершина, из которой идёт ребро в u
                 ind = data['num']  # индекс ребра (v, u)
                 A[k, ind] = 1.0
+            k += 1
     # - заполняем вектор правых частей ограничений
     rhs = np.ones(num_constraints)
     # - создаем линейное ограничение типа "равенство"
@@ -199,8 +199,8 @@ orientation0 = get_initial_orientation(G)
 optimal_orientation = optimize_orientation(G, source, destination)
 alpha0 = get_initial_alphas(orientation0)
 print(optimize_coefs(orientation0, alpha0, 1, 4))
-#print(calc_variance(orientation0, None, 1, 4))
-
+print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
+print(orientation0.edges())
 
 """
 import matplotlib.pyplot as plt
