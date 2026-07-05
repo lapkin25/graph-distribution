@@ -250,10 +250,12 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 
-#orientation0 = get_initial_orientation(G)
+orientation0 = get_initial_orientation(G)
+"""
 orientation0 = nx.DiGraph()
 orientation0.add_nodes_from([1, 2, 3, 4])
 orientation0.add_edges_from([(1, 2, {'num': 0}), (1, 3, {'num': 1}), (2, 4, {'num': 2}), (4, 3, {'num': 3}), (2, 3, {'num': 4}), (4, 5, {'num': 5})])
+"""
 optimal_orientation = optimize_orientation(G, source, destination, orientation0, verbose=True)
 #optimal_orientation = orientation0
 
