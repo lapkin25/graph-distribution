@@ -6,11 +6,11 @@ from scipy.optimize import Bounds, LinearConstraint, minimize
 
 G = nx.Graph()
 
-G.add_nodes_from([1, 2, 3, 4])
-G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+G.add_nodes_from([1, 2, 3, 4, 5])
+G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3), (4, 5)])
 
 source = 1
-destination = 4
+destination = 5
 
 
 """
@@ -43,19 +43,19 @@ def is_orientation_correct(orientation, start, finish):
           start - начальная вершина
           finish - конечная вершина
     Выход: является ли ориентировка корректной, то есть:
-      а) в каждой вершине (кроме start) есть входящие рёбра
-      б) в каждой вершине (кроме finish) есть исходящие рёбра
+      -- а) в каждой вершине (кроме start) есть входящие рёбра
+      -- б) в каждой вершине (кроме finish) есть исходящие рёбра
       в) в вершине start нет входящих рёбер
       г) в вершине finish нет исходящих рёбер
       д) вершина finish достижима из вершины start
       е) в графе нет циклов
     """
     # а)
-    if not all([orientation.in_degree(v) != 0 for v in orientation.nodes() if v != start]):
-        return False
+    #if not all([orientation.in_degree(v) != 0 for v in orientation.nodes() if v != start]):
+    #    return False
     # б)
-    if not all([orientation.out_degree(v) != 0 for v in orientation.nodes() if v != finish]):
-        return False
+    #if not all([orientation.out_degree(v) != 0 for v in orientation.nodes() if v != finish]):
+    #    return False
     # в)
     if orientation.in_degree(start) > 0:
         return False
@@ -171,16 +171,70 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     return optimal_alpha
 
 
+def reverse_edge(orientation, u, v):
+    """
+    Вход: orientation - орграф (ориентировка)
+          u, v - концы ребра (u, v) или (v, u)
+    Выход: new_orientation - ориентировка, в которой развёрнуто ребро (u, v)
+    """
+    new_orientation = orientation.copy()
+    if orientation.has_edge(u, v):
+        num = orientation.edges[u, v]['num']
+        new_orientation.remove_edge(u, v)
+        new_orientation.add_edge(v, u, num=num)
+    elif orientation.has_edge(v, u):
+        num = orientation.edges[v, u]['num']
+        new_orientation.remove_edge(v, u)
+        new_orientation.add_edge(u, v, num=num)
+    else:
+        raise
+    return new_orientation
 
-def optimize_orientation(graph, start, finish):
+
+def optimize_orientation(graph, start, finish, initial_orientation, verbose=False):
     """
     Вход: graph - неориентированный граф
           start - начальная вершина
           finish - конечная вершина
+          initial_orientation - начальная ориентировка (корректная)
     Выход: оптимальная ориентировка рёбер, обеспечивающая
       минимум дисперсии сигнала в конечной вершине
     """
-    pass
+    # дисперсия при оптимальных коэффициентах (при заданной ориентировке)
+    def calc_optimal_variance(orientation):
+        initial_alpha = get_initial_alphas(orientation)
+        optimal_alpha = optimize_coefs(orientation, initial_alpha, start, finish)
+        return calc_variance(orientation, optimal_alpha, start, finish)[finish]
+
+    orientation = initial_orientation.copy()  # начинаем с начальной ориентировки
+    # проверка корректности ориентировки
+    if not is_orientation_correct(orientation, start, finish):
+        raise
+    min_variance = calc_optimal_variance(orientation)  # инициализация: минимальная дисперсия
+    if verbose:
+        print(f"Начальная ориентировка, дисперсия: {min_variance}")
+    # Разворачиваем ребра, пока можно уменьшить дисперсию...
+    while True:
+        orientation_changed = False  # флаг: поменялась ли ориентировка
+        best_orientation = None
+        for u, v in graph.edges():
+            # разворачиваем ребро (u, v) в ориентировке
+            modified_orientation = reverse_edge(orientation, u, v)
+            # проверка корректности ориентировки
+            if is_orientation_correct(modified_orientation, start, finish):
+                # если удалось уменьшить дисперсию, запомнить
+                modified_variance = calc_optimal_variance(modified_orientation)
+                if modified_variance < min_variance:
+                    min_variance = modified_variance
+                    best_orientation = modified_orientation
+                    orientation_changed = True
+        if orientation_changed:
+            orientation = best_orientation
+            if verbose:
+                print(f"Улучшена ориентировка, дисперсия: {min_variance}")
+        else:
+            break
+    return orientation
 
 
 """
@@ -196,9 +250,12 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 
-orientation0 = get_initial_orientation(G)
-#optimal_orientation = optimize_orientation(G, source, destination)
-optimal_orientation = orientation0
+#orientation0 = get_initial_orientation(G)
+orientation0 = nx.DiGraph()
+orientation0.add_nodes_from([1, 2, 3, 4])
+orientation0.add_edges_from([(1, 2, {'num': 0}), (1, 3, {'num': 1}), (2, 4, {'num': 2}), (4, 3, {'num': 3}), (2, 3, {'num': 4}), (4, 5, {'num': 5})])
+optimal_orientation = optimize_orientation(G, source, destination, orientation0, verbose=True)
+#optimal_orientation = orientation0
 
 alpha0 = get_initial_alphas(optimal_orientation)
 opt_alpha = optimize_coefs(optimal_orientation, alpha0, source, destination)
