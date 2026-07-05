@@ -28,6 +28,7 @@ def get_initial_orientation(G):
     # перебрать все рёбра; если есть симметричное, удалить его
     # (это плохая идея)
 
+    # TODO: придётся перевернуть некоторые рёбра, чтобы получилась корректная ориентировка
     # создать пустой орграф
     G1 = nx.DiGraph()
     # добавить к орграфу ребра неориентированного графа
@@ -164,7 +165,7 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     linear_constraint = LinearConstraint(A, rhs, rhs)
     # решение задачи оптимизации
     res = minimize(objective_function, initial_alpha, method='trust-constr',
-                   constraints=linear_constraint, bounds=bounds, options={'verbose': 1})
+                   constraints=linear_constraint, bounds=bounds)  #, options={'verbose': 1})
     optimal_alpha = res.x
 
     return optimal_alpha
@@ -196,11 +197,23 @@ for i, e in enumerate(G.edges):
 
 
 orientation0 = get_initial_orientation(G)
-optimal_orientation = optimize_orientation(G, source, destination)
-alpha0 = get_initial_alphas(orientation0)
-print(optimize_coefs(orientation0, alpha0, 1, 4))
-print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
-print(orientation0.edges())
+#optimal_orientation = optimize_orientation(G, source, destination)
+optimal_orientation = orientation0
+
+alpha0 = get_initial_alphas(optimal_orientation)
+opt_alpha = optimize_coefs(optimal_orientation, alpha0, source, destination)
+print(f"Источник: {source}\nКонечная вершина: {destination}")
+print("Коэффициенты alpha на ориентированных рёбрах:")
+for i, (u, v) in enumerate(optimal_orientation.edges()):
+    print(u, v, "->", opt_alpha[i])
+var = calc_variance(optimal_orientation, opt_alpha, source, destination)
+print("Дисперсии на вершинах:")
+for v in optimal_orientation.nodes():
+    print(v, "->", var[v])
+
+#print(optimize_coefs(orientation0, alpha0, 1, 4))
+#print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
+#print(orientation0.edges())
 
 """
 import matplotlib.pyplot as plt
