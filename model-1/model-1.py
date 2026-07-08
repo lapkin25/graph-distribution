@@ -6,34 +6,68 @@ from scipy.optimize import Bounds, LinearConstraint, minimize
 
 G = nx.Graph()
 
-G.add_nodes_from([1, 2, 3, 4, 5])
-G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3), (4, 5)])
+G.add_nodes_from([1, 2, 3, 4])
+G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
-source = 1
-destination = 5
+#G = nx.karate_club_graph()
+
+source = 4
+destination = 1
 
 
 """
 Начало раздела "функции"
 """
 
-def get_initial_orientation(G):
+def get_initial_orientation(G, start, finish):
     """
     Вход: G - неориентированный граф
+          start - начальная вершина
+          finish - конечная вершина
     Выход: G' - ориентированный граф, полученный произвольной
       ориентировкой всех рёбер (каждое неориентированное ребро G
       превращается в одно ориентированное ребро G')
     """
-    #G1 = nx.DiGraph.to_directed(G)
-    # перебрать все рёбра; если есть симметричное, удалить его
-    # (это плохая идея)
+    #temp_G = G.copy()  # рабочая копия неориентированного графа
+    num_nodes = len(G.nodes())
+    path = nx.shortest_path(G, start, finish)
+    #print(path)
+    numbering = {}
+    for i in range(len(path) - 1):
+        numbering[path[i]] = i
+    numbering[path[len(path) - 1]] = num_nodes - 1
+    k = 0
+    while True:
+        min_distance = None
+        nearest_node = None
+        for v in G.nodes():
+            if v not in numbering:
+                distance = nx.shortest_path_length(G, start, v)
+                if min_distance is None or distance < min_distance:
+                    min_distance = distance
+                    nearest_node = v
+        if nearest_node is None:
+            break
+        else:
+            k += 1
+            numbering[nearest_node] = k
+    #print(numbering)
+    G1 = nx.DiGraph()
+    # добавить к орграфу ребра неориентированного графа
+    for u, v, data in G.edges(data=True):
+        if numbering[u] < numbering[v]:
+            G1.add_edge(u, v, num=data['num'])
+        else:
+            G1.add_edge(v, u, num=data['num'])
 
+    """
     # TODO: придётся перевернуть некоторые рёбра, чтобы получилась корректная ориентировка
     # создать пустой орграф
     G1 = nx.DiGraph()
     # добавить к орграфу ребра неориентированного графа
     for u, v, data in G.edges(data=True):
         G1.add_edge(u, v, num=data['num'])
+    """
     return G1
 
 
@@ -43,7 +77,7 @@ def is_orientation_correct(orientation, start, finish):
           start - начальная вершина
           finish - конечная вершина
     Выход: является ли ориентировка корректной, то есть:
-      -- а) в каждой вершине (кроме start) есть входящие рёбра
+      а) в каждой вершине (кроме start) есть входящие рёбра
       -- б) в каждой вершине (кроме finish) есть исходящие рёбра
       в) в вершине start нет входящих рёбер
       г) в вершине finish нет исходящих рёбер
@@ -51,8 +85,8 @@ def is_orientation_correct(orientation, start, finish):
       е) в графе нет циклов
     """
     # а)
-    #if not all([orientation.in_degree(v) != 0 for v in orientation.nodes() if v != start]):
-    #    return False
+    if not all([orientation.in_degree(v) != 0 for v in orientation.nodes() if v != start]):
+        return False
     # б)
     #if not all([orientation.out_degree(v) != 0 for v in orientation.nodes() if v != finish]):
     #    return False
@@ -152,8 +186,10 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     A = np.zeros((num_constraints, len_alpha))
     k = 0  # счётчик ограничений
     for u in orientation.nodes():
-        if u != start:
+        #if u != start:
+        if orientation.in_degree(u) > 0:
             # во всех вершинах, кроме стартовой, есть входящие рёбра
+            # ???
             for v, _, data in orientation.in_edges(u, data=True):
                 # v - вершина, из которой идёт ребро в u
                 ind = data['num']  # индекс ребра (v, u)
@@ -250,7 +286,7 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 
-orientation0 = get_initial_orientation(G)
+orientation0 = get_initial_orientation(G, source, destination)
 """
 orientation0 = nx.DiGraph()
 orientation0.add_nodes_from([1, 2, 3, 4])
