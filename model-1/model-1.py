@@ -15,8 +15,8 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 
 #G = nx.karate_club_graph()
 
-source = 1
-destination = 4
+source = 6
+destination = 5
 
 
 """
@@ -302,6 +302,7 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 
+"""
 # Расчет матрицы дисперсий при передаче сигнала между всеми парами вершин...
 ans = {}
 for s in G.nodes():
@@ -324,6 +325,7 @@ for s in G.nodes():
             r = ans[s, t]
         print("%.2f" % r, end=' ')
     print()
+"""
 
 
 orientation0 = get_initial_orientation(G, source, destination)
@@ -340,7 +342,7 @@ opt_alpha = optimize_coefs(optimal_orientation, alpha0, source, destination)
 print(f"Источник: {source}\nКонечная вершина: {destination}")
 print("Коэффициенты alpha на ориентированных рёбрах:")
 for i, (u, v) in enumerate(optimal_orientation.edges()):
-    print(u, v, "->", opt_alpha[i])
+    print(u, v, "->", opt_alpha[G.edges[u, v]['num']])
 var = calc_variance(optimal_orientation, opt_alpha, source, destination)
 print("Дисперсии на вершинах:")
 for v in optimal_orientation.nodes():
