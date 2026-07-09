@@ -15,8 +15,8 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 
 #G = nx.karate_club_graph()
 
-source = 9
-destination = 1
+source = 1
+destination = 4
 
 
 """
@@ -33,9 +33,11 @@ def get_initial_orientation(G, start, finish):
       превращается в одно ориентированное ребро G')
     """
     #temp_G = G.copy()  # рабочая копия неориентированного графа
-    num_nodes = len(G.nodes())
-    path = nx.shortest_path(G, start, finish)
+    # num_nodes = len(G.nodes())
+    #path = nx.shortest_path(G, start, finish)
     #print(path)
+
+    # Вычисляем порядок обхода BFS...
     numbering = {}
     k = 0
     numbering[start] = 0
@@ -63,7 +65,9 @@ def get_initial_orientation(G, start, finish):
             k += 1
             numbering[nearest_node] = k
     """
-    print(numbering)
+    #print(numbering)
+
+    # Направляем рёбра от меньших номеров к большим...
     G1 = nx.DiGraph()
     # добавить к орграфу ребра неориентированного графа
     for u, v, data in G.edges(data=True):
@@ -296,6 +300,30 @@ edges_list = []
 for i, e in enumerate(G.edges):
     G.edges[e]['num'] = i
     edges_list.append(e)
+
+
+# Расчет матрицы дисперсий при передаче сигнала между всеми парами вершин...
+ans = {}
+for s in G.nodes():
+    for t in G.nodes():
+        if s == t:
+            continue
+        orientation0 = get_initial_orientation(G, s, t)
+        optimal_orientation = optimize_orientation(G, s, t, orientation0, verbose=False)
+        alpha0 = get_initial_alphas(optimal_orientation)
+        opt_alpha = optimize_coefs(optimal_orientation, alpha0, s, t)
+        var = calc_variance(optimal_orientation, opt_alpha, s, t)
+        ans[s, t] = var[t]
+        print(s, t, '->', "дисперсия", var[t])
+# вывод матрицы
+for s in G.nodes():
+    for t in G.nodes():
+        if s == t:
+            r = 0
+        else:
+            r = ans[s, t]
+        print("%.2f" % r, end=' ')
+    print()
 
 
 orientation0 = get_initial_orientation(G, source, destination)
