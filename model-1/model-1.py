@@ -6,12 +6,16 @@ from scipy.optimize import Bounds, LinearConstraint, minimize
 
 G = nx.Graph()
 
-G.add_nodes_from([1, 2, 3, 4])
-G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+#G.add_nodes_from([1, 2, 3, 4])
+#G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+
+G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
+G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
+                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
 #G = nx.karate_club_graph()
 
-source = 4
+source = 9
 destination = 1
 
 
@@ -33,6 +37,13 @@ def get_initial_orientation(G, start, finish):
     path = nx.shortest_path(G, start, finish)
     #print(path)
     numbering = {}
+    k = 0
+    numbering[start] = 0
+    for u, v in nx.bfs_edges(G, start):
+        k += 1
+        numbering[v] = k
+
+    """
     for i in range(len(path) - 1):
         numbering[path[i]] = i
     numbering[path[len(path) - 1]] = num_nodes - 1
@@ -51,7 +62,8 @@ def get_initial_orientation(G, start, finish):
         else:
             k += 1
             numbering[nearest_node] = k
-    #print(numbering)
+    """
+    print(numbering)
     G1 = nx.DiGraph()
     # добавить к орграфу ребра неориентированного графа
     for u, v, data in G.edges(data=True):
@@ -80,7 +92,7 @@ def is_orientation_correct(orientation, start, finish):
       а) в каждой вершине (кроме start) есть входящие рёбра
       -- б) в каждой вершине (кроме finish) есть исходящие рёбра
       в) в вершине start нет входящих рёбер
-      г) в вершине finish нет исходящих рёбер
+      -- г) в вершине finish нет исходящих рёбер
       д) вершина finish достижима из вершины start
       е) в графе нет циклов
     """
@@ -94,8 +106,8 @@ def is_orientation_correct(orientation, start, finish):
     if orientation.in_degree(start) > 0:
         return False
     # г)
-    if orientation.out_degree(finish) > 0:
-        return False
+    #if orientation.out_degree(finish) > 0:
+    #    return False
     # д)
     if not nx.has_path(orientation, start, finish):
         return False
