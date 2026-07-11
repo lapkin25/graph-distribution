@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, minimize
+import random
 
 
 
@@ -14,8 +15,9 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
 #G = nx.karate_club_graph()
+# https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
-source = 1
+source = 2
 
 
 
@@ -37,7 +39,11 @@ def get_initial_alphas(graph, start):
             ind = data['num']  # индекс ребра (v, u)
             alpha[ind] = 1. / num_incoming
     # пока заглушка - нулевая матрица beta
-    beta = np.zeros((len(graph.nodes()), len(graph.edges())))
+    #beta = np.zeros((len(graph.nodes()), len(graph.edges())))
+    beta = np.ones((len(graph.nodes()), len(graph.edges())))
+    beta[graph.nodes[start]['vert_num'], :] = np.zeros(len(graph.edges()))
+    for v, _, data in graph.in_edges(start, data=True):
+        alpha[data['num']] = 0.0
     return alpha, beta
 
 
@@ -51,7 +57,9 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
     """
     new_alpha = cur_alpha[:]
     new_beta = cur_beta[:, :]
-    for v in graph.nodes():
+    nodes_list = list(graph.nodes())
+    random.shuffle(nodes_list)
+    for v in nodes_list:
         if v == start:
             continue
 
@@ -107,11 +115,16 @@ print(beta0)
 alpha = alpha0[:]
 beta = beta0[:, :]
 
-num_steps = 50
+num_steps = 30
 
 for step in range(num_steps):
     print(f"Шаг {step + 1}")
     alpha, beta = improve_alphas(digraph, source, alpha, beta)
     print("alpha = ", alpha)
-    print("beta = ", beta)
+    #print("beta = ", beta)
     print("variance = ", np.sum(beta ** 2, axis=1))
+print("\nОтвет:")
+print(digraph.edges())
+print("alpha = ", alpha)
+#print("beta = ", beta)
+print("variance = ", np.sum(beta ** 2, axis=1))
