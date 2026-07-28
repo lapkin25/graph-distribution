@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, minimize
 import random
+import matplotlib.pyplot as plt
 
 
 
@@ -203,8 +204,10 @@ edges_list = []
 for i, e in enumerate(digraph.edges):
     digraph.edges[e]['num'] = i
     edges_list.append(e)
+nodes_list = []
 for i, v in enumerate(digraph.nodes):
     digraph.nodes[v]['vert_num'] = i
+    nodes_list.append(v)
 
 alpha0, beta0, gamma0 = get_initial_alphas(digraph, source)
 print(digraph.edges())
@@ -234,10 +237,46 @@ print("variance = ", np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamm
 # TODO: вычислить расстояние между предыдущим и следующим приближениями
 
 
+# TODO: зафиксировать какую-нибудь вершину,
+#   придать шуму в этой вершине значения от 0.1 до 10.0,
+#   построить график
+
+u = 2
+v = 3
+
+graph_result = []
+# Расчет чувствительностей к шумам в вершине u
+grid = np.linspace(0.0, 10, 20)
+for var_u in grid:
+    # задать шумы в вершинах: всюду 0, кроме u
+    noise_nodes = np.zeros(len(G.nodes))
+    noise_nodes[digraph.nodes[u]['vert_num']] = var_u
+    # вычислить начальные приближения для коэффициентов
+    alpha0, beta0, gamma0 = get_initial_alphas(digraph, source)
+    alpha = alpha0[:]
+    beta = beta0[:, :]
+    gamma = gamma0[:, :]
+    # итерации...
+    print("Шаги: ")
+    for step in range(num_steps):
+        print(f" {step + 1}", end='')
+        alpha, beta, gamma = improve_alphas(digraph, source, alpha, beta, gamma)
+    variances = np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2)
+    graph_result.append(variances[digraph.nodes[v]['vert_num']])
+
+print("u = ", u)
+print("v = ", v)
+plt.plot(grid, graph_result)
+plt.xlabel(f'Дисперсия шума в вершине u = {u}')
+plt.ylabel(f'Дисперсия сигнала в вершине v = {v}')
+plt.show()
+
+
 # Расчет матрицы дисперсий между всеми парами вершин...
 """
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
 nodes_list = []  # все вершины графа в порядке перечисления
+# ! внимательно: nodes_list уже был объявлен ранее
 cnt = 0
 for src in G.nodes():
     print("\n\nИсточник =", src)
