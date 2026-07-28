@@ -94,6 +94,11 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
 
 source = 1
 
+noise_edges = np.ones(2 * len(G.edges))
+
+noise_nodes = np.zeros(len(G.nodes))
+#noise_nodes[2] = 1.0
+
 
 
 def get_initial_alphas(graph, start):
@@ -104,6 +109,8 @@ def get_initial_alphas(graph, start):
              (распределение поровну по рёбрам, входящим в каждую вершину)
            beta - матрица коэффициентов шумов:
              beta[v, e] - это коэффициент сигнала, пришедшего в вершину v, при шуме на ребре e
+           gamma - матрица коэффициентов шумов в вершинах:
+             gamma[v, u] - это коэффициент сигнала, пришедшего в вершину v, при шуме в вершине u
     """
     num_alphas = len(graph.edges())
     alpha = np.zeros(num_alphas)
@@ -117,21 +124,29 @@ def get_initial_alphas(graph, start):
     #beta = np.zeros((len(graph.nodes()), len(graph.edges())))
     beta = np.ones((len(graph.nodes()), len(graph.edges())))
     beta[graph.nodes[start]['vert_num'], :] = np.zeros(len(graph.edges()))
+    gamma = np.ones((len(graph.nodes()), len(graph.nodes())))
+    gamma[graph.nodes[start]['vert_num'], :] = np.zeros(len(graph.nodes()))  # ??? источник шума не создает
     for v, _, data in graph.in_edges(start, data=True):
         alpha[data['num']] = 0.0
-    return alpha, beta
+    return alpha, beta, gamma
 
 
-def improve_alphas(graph, start, cur_alpha, cur_beta):
+def improve_alphas(graph, start, cur_alpha, cur_beta, cur_gamma):
     """
+    Итоговый шум сигнала в вершине графа складывается из шумов
+      вследствие помех передачи по ребрам и шумов вследствие зашумления сигнала в вершинах
+
     Вход: graph - орграф
           cur_alpha - коэффициенты на всех ребрах
           cur_beta - матрица шумовых коэффициентов (на всех ребрах) в каждой вершине
+          cur_gamma - матрица шумовых коэффициентов (в каждой вершине)
     Выход: new_alpha - улучшенные коэффициенты на всех рёбрах
            new_beta - улучшенная матрица шумовых коэффициентов
+           new_gamma - улучшенная матрица шумовых коэффициентов в вершинах
     """
     new_alpha = cur_alpha[:]
     new_beta = cur_beta[:, :]
+    new_gamma = cur_gamma[:, :]
     nodes_list = list(graph.nodes())
     random.shuffle(nodes_list)
     for v in nodes_list:
@@ -141,16 +156,20 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
         # оптимизируем коэффициенты при сигналах, пришедших в вершину v ...
         num_alphas = graph.in_degree(v)
 
-        def calc_beta(alpha_v):
+        def calc_beta_gamma(alpha_v):
             beta_v = np.zeros(len(graph.edges()))
+            gamma_v = np.zeros(len(graph.nodes()))
             for i, (u, _, data) in enumerate(graph.in_edges(v, data=True)):
                 beta_v += alpha_v[i] * new_beta[graph.nodes[u]['vert_num'], :]
-                beta_v[data['num']] += alpha_v[i] * 1.0  # единичная дисперсия всех шумов
-            return beta_v
+                beta_v[data['num']] += alpha_v[i]
+                gamma_v += alpha_v[i] * new_gamma[graph.nodes[u]['vert_num'], :]
+            gamma_v[graph.nodes[v]['vert_num']] += 1.0
+            # TODO: вывести посчитанный вектор gamma_v, проверить значение в источнике
+            return beta_v, gamma_v
 
         def calc_variance(alpha_v):
-            beta_v = calc_beta(alpha_v)
-            return sum(beta_v ** 2)
+            beta_v, gamma_v = calc_beta_gamma(alpha_v)
+            return np.dot(noise_edges, beta_v ** 2) + np.dot(noise_nodes, gamma_v ** 2)
 
         # TODO: добавить gamma - вектор коэффициентов при дополнительных шумах в вершинах графа
         # TODO: сделать дисперсии на ребрах не только единичными (чтобы они задавались)
@@ -166,10 +185,11 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
         alpha_v = res.x
         for i, (u, _) in enumerate(graph.in_edges(v)):
             new_alpha[graph.edges[u, v]['num']] = alpha_v[i]
-        new_beta[graph.nodes[v]['vert_num'], :] = calc_beta(alpha_v)
+        (new_beta[graph.nodes[v]['vert_num'], :],
+         new_gamma[graph.nodes[v]['vert_num'], :]) = calc_beta_gamma(alpha_v)
         # TODO: сразу же обновить beta во всех других вершинах (кроме start)?
 
-    return new_alpha, new_beta
+    return new_alpha, new_beta, new_gamma
 
 
 
@@ -186,26 +206,31 @@ for i, e in enumerate(digraph.edges):
 for i, v in enumerate(digraph.nodes):
     digraph.nodes[v]['vert_num'] = i
 
-alpha0, beta0 = get_initial_alphas(digraph, source)
+alpha0, beta0, gamma0 = get_initial_alphas(digraph, source)
 print(digraph.edges())
 print(alpha0)
 print(beta0)
+print(gamma0)
 alpha = alpha0[:]
 beta = beta0[:, :]
+gamma = gamma0[:, :]
 
 num_steps = 30
 
 for step in range(num_steps):
     print(f"Шаг {step + 1}")
-    alpha, beta = improve_alphas(digraph, source, alpha, beta)
+    alpha, beta, gamma = improve_alphas(digraph, source, alpha, beta, gamma)
     print("alpha = ", alpha)
     #print("beta = ", beta)
-    print("variance = ", np.sum(beta ** 2, axis=1))
+    print("gamma = ", gamma)
+    #print("variance = ", np.sum(beta ** 2, axis=1))
+    print("variance = ", np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2))
 print("\nОтвет:")
 print(digraph.edges())
 print("alpha = ", alpha)
 #print("beta = ", beta)
-print("variance = ", np.sum(beta ** 2, axis=1))
+#print("variance = ", np.sum(beta ** 2, axis=1))
+print("variance = ", np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2))
 # TODO: вычислить расстояние между предыдущим и следующим приближениями
 
 
@@ -225,7 +250,7 @@ for src in G.nodes():
     for step in range(num_steps):
         print(f" {step + 1}", end='')
         alpha, beta = improve_alphas(digraph, src, alpha, beta)
-    var_matrix[cnt, :] = np.sum(beta ** 2, axis=1)
+    var_matrix[cnt, :] = np.sum(beta ** 2, axis=1)  # TODO: поправить с gamma
     nodes_list.append(src)
     cnt += 1
     #print("alpha = ", alpha)
