@@ -296,7 +296,12 @@ for u in G.nodes():
     sensitivities[digraph.nodes[u]['vert_num'], :] = (variances - variances_zero) / var_u
 
 print("ИТОГ")
+np.set_printoptions(precision=2)
 print(sensitivities)
+print("Среднее (по v):")
+print(np.mean(sensitivities, axis=0))  # какое среднее возмущение получается в графе при зашумлении отдельных вершин
+
+
 
 
 
