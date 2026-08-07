@@ -17,7 +17,7 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 
 #G = nx.karate_club_graph()
 
-source = 9
+source = 2
 destination = 8
 
 
@@ -271,8 +271,8 @@ def optimize_orientation(graph, start, finish, initial_orientation, verbose=Fals
     # Алгоритм имитации отжига, см.
     #   https://nry.me/posts/2020-05-14/simulated-annealing-with-python/
     #   https://github.com/nathanrooy/simulated-annealing
-    step_max = 100
-    temp_max = 3.0
+    step_max = 300
+    temp_max = 1.0
     temp_min = 0.00000001
     step, accept = 1, 0
     temp = temp_max
@@ -316,13 +316,13 @@ def optimize_orientation(graph, start, finish, initial_orientation, verbose=Fals
         if modified_variance < best_energy:
             best_energy = modified_variance
             best_orientation = modified_orientation
-            print(".%2f" % best_energy, end=' ')
+            print("%.2f" % best_energy, end=' ')
         # обновляем параметры
         temp = update_temp(step)
         step += 1
         #print(f"Температура {temp}, значение функции {best_energy}")
     acceptance_rate = accept / step
-    print(f" => acceptance rate {acceptance_rate}")
+    print(f" => acceptance rate {acceptance_rate:.2f}")
 
 
     """
@@ -363,7 +363,7 @@ for i, e in enumerate(G.edges):
     edges_list.append(e)
 
 
-"""
+
 # Расчет матрицы дисперсий при передаче сигнала между всеми парами вершин...
 ans = {}
 for s in G.nodes():
@@ -384,9 +384,9 @@ for s in G.nodes():
             r = 0
         else:
             r = ans[s, t]
-        print("%.2f" % r, end=' ')
+        print("{:.2f}".format(r), end=' ')
     print()
-"""
+
 
 
 orientation0 = get_initial_orientation(G, source, destination)
