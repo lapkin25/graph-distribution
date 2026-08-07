@@ -11,11 +11,11 @@ G = nx.Graph()
 #G.add_nodes_from([1, 2, 3, 4])
 #G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
-G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
-G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
-                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
+#G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
+#G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
+#                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-#G = nx.karate_club_graph()
+G = nx.karate_club_graph()
 
 source = 2
 destination = 8

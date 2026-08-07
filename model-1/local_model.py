@@ -7,8 +7,8 @@ import random
 
 G = nx.Graph()
 
-G.add_nodes_from([1, 2, 3, 4])
-G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+#G.add_nodes_from([1, 2, 3, 4])
+#G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
 #G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
@@ -17,6 +17,32 @@ G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 #G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
+# пример из статьи: Li et al. Efficient algorithms for finding diversified
+# top-k structural hole spanners in social networks (2022)
+G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
+G.add_edges_from([(1, 11), (1, 10), (1, 5), (1, 6),
+                  (2, 5), (2, 6), (2, 7),
+                  (3, 8), (3, 27), (3, 28),
+                  (4, 9), (4, 27), (4, 13),
+                  (5, 16), (5, 17), (5, 18),
+                  (6, 19), (6, 20), (6, 21),
+                  (7, 9), (7, 23), (7, 8), (7, 24),
+                  (8, 23), (8, 24),
+                  (9, 24),
+                  (10, 14), (10, 15), (10, 11),
+                  (11, 12), (11, 15),
+                  (12, 14),
+                  (13, 25), (13, 26),
+                  (14, 15),
+                  (16, 17),
+                  (19, 21),
+                  (20, 22),
+                  (21, 22),
+                  (23, 24),
+                  (25, 26),
+                  (27, 28), (27, 29), (27, 30),
+                  (28, 29), (28, 30),
+                  (29, 30)])
 
 """
 G.add_nodes_from(list(range(1, 37)))
@@ -231,10 +257,31 @@ for src in G.nodes():
     #print("alpha = ", alpha)
     #print("beta = ", beta)
     #print("variance = ", np.sum(beta ** 2, axis=1))
-print("Матрица дисперсий:")
+print("\nМатрица дисперсий:")
 print(var_matrix)
 print("Вершины:")
 print(nodes_list)
 print("Средние дисперсии для разных источников:")
 print(np.mean(var_matrix, axis=1))
 """
+
+
+import matplotlib.pyplot as plt
+
+# Вычисляем позиции узлов (алгоритм spring_layout помогает избежать наложения)
+pos = nx.spring_layout(G, seed=42)
+
+# Рисуем граф
+nx.draw(
+    G,
+    pos,
+    with_labels=True,  # Показывать метки узлов
+    node_color="lightblue",  # Цвет узлов
+    node_size=600,  # Размер узлов
+    font_size=12,  # Размер шрифта меток
+    font_weight="bold",  # Жирность шрифта
+    arrows=True  # Для DiGraph стрелки рисуются по умолчанию
+)
+plt.savefig("fig2.eps", format='eps')
+# Показываем график
+plt.show()
