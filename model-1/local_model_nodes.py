@@ -245,7 +245,7 @@ alpha = alpha0[:]
 beta = beta0[:, :]
 gamma = gamma0[:, :]
 
-num_steps = 30
+num_steps = 40
 
 for step in range(num_steps):
     print(f"Шаг {step + 1}")
@@ -261,13 +261,50 @@ print("alpha = ", alpha)
 #print("beta = ", beta)
 #print("variance = ", np.sum(beta ** 2, axis=1))
 print("variance = ", np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2))
+# дисперсии с нулевым шумом
+variances_zero = np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2)
 # TODO: вычислить расстояние между предыдущим и следующим приближениями
+
+
+
+#u = 2
+# sensitivities[u, v] - чувствительность сигнала в вершине v к шуму в вершине u
+sensitivities = np.zeros((len(G.nodes), len(G.nodes)))
+for u in G.nodes():
+    if u == source:
+        continue
+    # Расчет чувствительностей сигнала во всех вершинах v к шумам в промежуточной вершине u
+    var_u = 0.1  # дисперсия шума в вершине u
+    # задать шумы в вершинах: всюду 0, кроме u
+    noise_nodes = np.zeros(len(G.nodes))
+    noise_nodes[digraph.nodes[u]['vert_num']] = var_u
+    # вычислить начальные приближения для коэффициентов
+    alpha0, beta0, gamma0 = get_initial_alphas(digraph, source)
+    alpha = alpha0[:]
+    beta = beta0[:, :]
+    gamma = gamma0[:, :]
+    # итерации...
+    print("\nШаги: ")
+    for step in range(num_steps):
+        print(f" {step + 1}", end='')
+        alpha, beta, gamma = improve_alphas(digraph, source, alpha, beta, gamma)
+    variances = np.dot(noise_edges, beta.T ** 2) + np.dot(noise_nodes, gamma.T ** 2)
+    #graph_result.append(variances[digraph.nodes[v]['vert_num']])
+    print("\nВершины:", nodes_list)
+    print("u =", u)
+    print("Чувствительности:", (variances - variances_zero) / var_u)
+    sensitivities[digraph.nodes[u]['vert_num'], :] = (variances - variances_zero) / var_u
+
+print("ИТОГ")
+print(sensitivities)
+
+
 
 
 # TODO: зафиксировать какую-нибудь вершину,
 #   придать шуму в этой вершине значения от 0.1 до 10.0,
 #   построить график
-
+"""
 u = 2
 v = 3
 
@@ -284,7 +321,7 @@ for var_u in grid:
     beta = beta0[:, :]
     gamma = gamma0[:, :]
     # итерации...
-    print("Шаги: ")
+    print("\nШаги: ")
     for step in range(num_steps):
         print(f" {step + 1}", end='')
         alpha, beta, gamma = improve_alphas(digraph, source, alpha, beta, gamma)
@@ -297,7 +334,7 @@ plt.plot(grid, graph_result)
 plt.xlabel(f'Дисперсия шума в вершине u = {u}')
 plt.ylabel(f'Дисперсия сигнала в вершине v = {v}')
 plt.show()
-
+"""
 
 # Расчет матрицы дисперсий между всеми парами вершин...
 """
