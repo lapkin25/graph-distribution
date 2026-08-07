@@ -15,8 +15,8 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 
 #G = nx.karate_club_graph()
 
-source = 6
-destination = 5
+source = 5
+destination = 6
 
 
 """
@@ -310,7 +310,7 @@ for s in G.nodes():
         if s == t:
             continue
         orientation0 = get_initial_orientation(G, s, t)
-        optimal_orientation = optimize_orientation(G, s, t, orientation0, verbose=False)
+        optimal_orientation = optimize_orientation(G, s, t, orientation0, verbose=True)  #verbose=False)
         alpha0 = get_initial_alphas(optimal_orientation)
         opt_alpha = optimize_coefs(optimal_orientation, alpha0, s, t)
         var = calc_variance(optimal_orientation, opt_alpha, s, t)
@@ -352,15 +352,15 @@ for v in optimal_orientation.nodes():
 #print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
 #print(orientation0.edges())
 
-"""
+
 import matplotlib.pyplot as plt
 
 # Вычисляем позиции узлов (алгоритм spring_layout помогает избежать наложения)
-pos = nx.spring_layout(orientation0, seed=42)
+pos = nx.spring_layout(orientation0.to_undirected(), seed=42)
 
 # Рисуем граф
 nx.draw(
-    orientation0,
+    orientation0.to_undirected(),
     pos,
     with_labels=True,  # Показывать метки узлов
     node_color="lightblue",  # Цвет узлов
@@ -369,7 +369,8 @@ nx.draw(
     font_weight="bold",  # Жирность шрифта
     arrows=True  # Для DiGraph стрелки рисуются по умолчанию
 )
-
+plt.savefig("fig1.eps", format='eps')
 # Показываем график
 plt.show()
-"""
+
+
