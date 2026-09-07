@@ -17,6 +17,7 @@ G = nx.Graph()
 #G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
+"""
 # пример из статьи: Li et al. Efficient algorithms for finding diversified
 # top-k structural hole spanners in social networks (2022)
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30])
@@ -43,6 +44,7 @@ G.add_edges_from([(1, 11), (1, 10), (1, 5), (1, 6),
                   (27, 28), (27, 29), (27, 30),
                   (28, 29), (28, 30),
                   (29, 30)])
+"""
 
 """
 G.add_nodes_from(list(range(1, 37)))
@@ -117,8 +119,13 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (24, 43), (43, 44), (44, 45)])
 """
 
+G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
+G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
+                  ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
+                  ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
+                  ('l', 'm'), ('l', 'n'), ('l', 'o')])
 
-source = 1
+source = 'a'
 
 
 
@@ -236,7 +243,7 @@ print("variance = ", np.sum(beta ** 2, axis=1))
 
 
 # Расчет матрицы дисперсий между всеми парами вершин...
-"""
+
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
 nodes_list = []  # все вершины графа в порядке перечисления
 cnt = 0
@@ -263,7 +270,20 @@ print("Вершины:")
 print(nodes_list)
 print("Средние дисперсии для разных источников:")
 print(np.mean(var_matrix, axis=1))
-"""
+
+
+import pandas as pd
+from centralities import compute_centralities, calc_ranking
+
+df = pd.DataFrame()
+df['vert'] = nodes_list
+df['our'] = np.mean(var_matrix, axis=1)
+df['our_rank'] = calc_ranking(df['our'], method="descending")
+
+df1 = compute_centralities(G, nodes_list)
+df = pd.concat([df, df1], axis=1)
+
+df.to_excel('result.xlsx', sheet_name='Лист1', index=False)
 
 
 import matplotlib.pyplot as plt
