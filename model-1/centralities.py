@@ -30,8 +30,8 @@ def compute_centralities(G, nodes_list):
     df['closeness'] = dict_to_list(nx.closeness_centrality(G), nodes_list)
     df['closeness_rank'] = calc_ranking(df['closeness'])
 
-    df['eigenvector'] = dict_to_list(nx.eigenvector_centrality(G), nodes_list)
-    df['eigenvector_rank'] = calc_ranking(df['eigenvector'])
+    #df['eigenvector'] = dict_to_list(nx.eigenvector_centrality(G), nodes_list)
+    #df['eigenvector_rank'] = calc_ranking(df['eigenvector'])
 
     df['current_flow_closeness'] = dict_to_list(nx.current_flow_closeness_centrality(G), nodes_list)
     df['current_flow_closeness_rank'] = calc_ranking(df['current_flow_closeness'])
