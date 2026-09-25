@@ -119,13 +119,17 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (24, 43), (43, 44), (44, 45)])
 """
 
+G = nx.krackhardt_kite_graph()
+
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+"""
 
-source = 'a'
+source = 3  #'a'
 
 
 
@@ -194,8 +198,8 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
         A = np.ones((1, len(alpha_v)))
         rhs = np.ones(1)
         linear_constraint = LinearConstraint(A, rhs, rhs)
-        res = minimize(calc_variance, alpha_v, method='trust-constr',
-                       constraints=linear_constraint, bounds=bounds)  #, options={'verbose': 1})
+        res = minimize(calc_variance, alpha_v, method='SLSQP', # method='trust-constr',
+                       constraints=linear_constraint)  #, bounds=bounds)  #, options={'verbose': 1})
         alpha_v = res.x
         for i, (u, _) in enumerate(graph.in_edges(v)):
             new_alpha[graph.edges[u, v]['num']] = alpha_v[i]
@@ -241,12 +245,17 @@ print("alpha = ", alpha)
 print("variance = ", np.sum(beta ** 2, axis=1))
 # TODO: вычислить расстояние между предыдущим и следующим приближениями
 
+for i in range(len(digraph.edges())):
+    print(list(digraph.edges())[i], '->', alpha[i])
+
 
 # Расчет матрицы дисперсий между всеми парами вершин...
 
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
 nodes_list = []  # все вершины графа в порядке перечисления
 cnt = 0
+alpha_history = []
+beta_history = [[] for _ in range(len(G.nodes()))]
 for src in G.nodes():
     print("\n\nИсточник =", src)
     # вычисление начальных приближений для коэффициентов
@@ -258,6 +267,9 @@ for src in G.nodes():
     for step in range(num_steps):
         print(f" {step + 1}", end='')
         alpha, beta = improve_alphas(digraph, src, alpha, beta)
+    alpha_history.append(alpha)
+    src_ind = digraph.nodes[src]['vert_num']
+    beta_history[src_ind] = beta
     var_matrix[cnt, :] = np.sum(beta ** 2, axis=1)
     nodes_list.append(src)
     cnt += 1
@@ -269,9 +281,52 @@ print(var_matrix)
 print("Вершины:")
 print(nodes_list)
 print("Средние дисперсии для разных источников:")
-print(np.mean(var_matrix, axis=1))
+print(np.mean(var_matrix, axis=1))  # TODO: разобраться, axis=1 - это усреднение по источникам или стокам?
+print("Коэффициенты alpha:")
+for line in alpha_history:
+    print(line)
+print("Средние alpha:")
+print(np.mean(np.vstack(alpha_history), axis=1))
+#beta_mean = np.mean(np.vstack(beta_history), axis=1)
+#print("Средние beta:")
+#print(beta_mean)
+
+"""
+rho = np.zeros((len(G.nodes()), len(G.nodes())))
+# Расчет суммы beta по исходящим ребрам
+for src in digraph.nodes():
+    for v in digraph.nodes():
+        for v, w, data in digraph.out_edges(v, data=True):
+            # w - вершина, в которую идет ребро из v
+            src_ind = digraph.nodes[src]['vert_num']
+            v_ind = digraph.nodes[v]['vert_num']
+            edge_ind = data['num']
+            rho[src, v] += beta_history[src_ind][v_ind, edge_ind]
+
+print("rho = ")
+print(rho)
+print("mean rho =", np.mean(rho, axis=1))
+# какой будет средняя ошибка на графе, если источником будет выбранная вершина?
+"""
 
 
+# Расчет для каждого ребра e средней величины beta[v, e], где u - источник
+# (среднее участие ребра при передаче информации по графу - аналог betweenness)
+avg_beta = np.zeros(len(digraph.edges()))
+avg_beta_2 = np.zeros(len(digraph.edges()))
+for edge_ind in range(len(digraph.edges())):
+    avg_beta[edge_ind] = np.mean(np.array(
+        [[beta_history[src_ind][v_ind, edge_ind] for v_ind in range(len(digraph.nodes()))] for src_ind in range(len(digraph.nodes()))]))
+    avg_beta_2[edge_ind] = np.mean(np.array(
+        [[beta_history[src_ind][v_ind, edge_ind] ** 2 for v_ind in range(len(digraph.nodes()))] for src_ind in range(len(digraph.nodes()))]))
+print("Ребра ", digraph.edges())
+print("avg_beta = ", avg_beta)
+for i, (val, val2) in enumerate(zip(avg_beta, avg_beta_2)):
+    print(edges_list[i], '->', val, ';', val2)
+
+
+
+"""
 import pandas as pd
 from centralities import compute_centralities, calc_ranking
 
@@ -284,7 +339,7 @@ df1 = compute_centralities(G, nodes_list)
 df = pd.concat([df, df1], axis=1)
 
 df.to_excel('result.xlsx', sheet_name='Лист1', index=False)
-
+"""
 
 import matplotlib.pyplot as plt
 
@@ -295,13 +350,17 @@ pos = nx.spring_layout(G, seed=42)
 nx.draw(
     G,
     pos,
-    with_labels=True,  # Показывать метки узлов
+    with_labels=True,  # Показывать метки узлов  # убрать, если надо поменять метки
     node_color="lightblue",  # Цвет узлов
     node_size=600,  # Размер узлов
     font_size=12,  # Размер шрифта меток
     font_weight="bold",  # Жирность шрифта
     arrows=True  # Для DiGraph стрелки рисуются по умолчанию
 )
+
+# Теперь добавляем метки
+#nx.draw_networkx_labels(G, pos=pos, labels=dict(zip(range(0, 10), range(1,11))), font_size=10)
+
 plt.savefig("fig2.eps", format='eps')
 # Показываем график
 plt.show()
