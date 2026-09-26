@@ -129,7 +129,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
 """
 
-source = 3  #'a'
+source = 0  #'a'
 
 
 
@@ -162,13 +162,14 @@ def get_initial_alphas(graph, start):
 def improve_alphas(graph, start, cur_alpha, cur_beta):
     """
     Вход: graph - орграф
+          start - вершина-источник сигнала
           cur_alpha - коэффициенты на всех ребрах
           cur_beta - матрица шумовых коэффициентов (на всех ребрах) в каждой вершине
     Выход: new_alpha - улучшенные коэффициенты на всех рёбрах
            new_beta - улучшенная матрица шумовых коэффициентов
     """
-    new_alpha = cur_alpha[:]
-    new_beta = cur_beta[:, :]
+    new_alpha = cur_alpha.copy()
+    new_beta = cur_beta.copy()
     nodes_list = list(graph.nodes())
     random.shuffle(nodes_list)
     for v in nodes_list:
@@ -209,6 +210,51 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
     return new_alpha, new_beta
 
 
+def improve_alphas_simplified(graph, start, cur_alpha, cur_disp):
+    """
+    Вход: graph - орграф
+          start - вершина-источник сигнала
+          cur_alpha - коэффициенты на всех ребрах
+          cur_disp - дисперсии в каждой вершине
+    Выход: new_alpha - улучшенные коэффициенты на всех рёбрах
+           new_disp - улучшенные дисперсии во всех вершинах
+    """
+    new_alpha = cur_alpha.copy()
+    new_disp = cur_disp.copy()
+    nodes_list = list(graph.nodes())
+    random.shuffle(nodes_list)
+
+    for v in nodes_list:
+        if v == start:
+            continue
+
+        # оптимизируем коэффициенты при сигналах, пришедших в вершину v ...
+        num_alphas = graph.in_degree(v)
+
+        def calc_disp(alpha_v):
+            disp_v = 0.0
+            for i, (u, _, data) in enumerate(graph.in_edges(v, data=True)):
+                disp_v += alpha_v[i] ** 2 * new_disp[graph.nodes[u]['vert_num']]
+                disp_v += alpha_v[i] ** 2 * 1.0  # единичная дисперсия всех шумов
+            return disp_v
+
+        alpha_v = np.array([new_alpha[graph.edges[u, v]['num']] for u, _ in graph.in_edges(v)])
+        # оптимизируем alpha_v
+        bounds = Bounds([0] * len(alpha_v), [1] * len(alpha_v))
+        A = np.ones((1, len(alpha_v)))
+        rhs = np.ones(1)
+        linear_constraint = LinearConstraint(A, rhs, rhs)
+        res = minimize(calc_disp, alpha_v, method='SLSQP', #method='trust-constr',
+                       constraints=linear_constraint)  #, bounds=bounds)  #, options={'verbose': 1})
+        alpha_v = res.x
+        for i, (u, _) in enumerate(graph.in_edges(v)):
+            new_alpha[graph.edges[u, v]['num']] = alpha_v[i]
+        new_disp[graph.nodes[v]['vert_num']] = calc_disp(alpha_v)
+        # TODO: сразу же обновить beta во всех других вершинах (кроме start)?
+
+    return new_alpha, new_disp
+
+
 
 # создать такой же орграф
 digraph = G.to_directed()
@@ -227,11 +273,12 @@ alpha0, beta0 = get_initial_alphas(digraph, source)
 print(digraph.edges())
 print(alpha0)
 print(beta0)
-alpha = alpha0[:]
-beta = beta0[:, :]
+alpha = alpha0.copy()
+beta = beta0.copy()
 
 num_steps = 30
 
+print("Обычная модель...")
 for step in range(num_steps):
     print(f"Шаг {step + 1}")
     alpha, beta = improve_alphas(digraph, source, alpha, beta)
@@ -247,6 +294,26 @@ print("variance = ", np.sum(beta ** 2, axis=1))
 
 for i in range(len(digraph.edges())):
     print(list(digraph.edges())[i], '->', alpha[i])
+
+print("Упрощенная модель...")
+alpha = alpha0.copy()
+disp = np.zeros(len(digraph.nodes()))
+for step in range(num_steps):
+    print(f"Шаг {step + 1}")
+    alpha, disp = improve_alphas_simplified(digraph, source, alpha, disp)
+    print("alpha = ", alpha)
+    #print("beta = ", beta)
+    print("variance = ", disp)
+print("\nОтвет:")
+print(digraph.edges())
+print("alpha = ", alpha)
+#print("beta = ", beta)
+print("disp = ", disp)
+# TODO: вычислить расстояние между предыдущим и следующим приближениями
+
+for i in range(len(digraph.edges())):
+    print(list(digraph.edges())[i], '->', alpha[i])
+
 
 
 # Расчет матрицы дисперсий между всеми парами вершин...
