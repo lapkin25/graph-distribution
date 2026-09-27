@@ -210,7 +210,7 @@ def improve_alphas(graph, start, cur_alpha, cur_beta):
     return new_alpha, new_beta
 
 
-def improve_alphas_simplified(graph, start, cur_alpha, cur_disp):
+def improve_alphas_oversimplified(graph, start, cur_alpha, cur_disp):
     """
     Вход: graph - орграф
           start - вершина-источник сигнала
@@ -300,7 +300,7 @@ alpha = alpha0.copy()
 disp = np.zeros(len(digraph.nodes()))
 for step in range(num_steps):
     print(f"Шаг {step + 1}")
-    alpha, disp = improve_alphas_simplified(digraph, source, alpha, disp)
+    alpha, disp = improve_alphas_oversimplified(digraph, source, alpha, disp)
     print("alpha = ", alpha)
     #print("beta = ", beta)
     print("variance = ", disp)
@@ -353,7 +353,7 @@ print("Коэффициенты alpha:")
 for line in alpha_history:
     print(line)
 print("Средние alpha:")
-print(np.mean(np.vstack(alpha_history), axis=1))
+print(np.mean(np.vstack(alpha_history), axis=0))
 #beta_mean = np.mean(np.vstack(beta_history), axis=1)
 #print("Средние beta:")
 #print(beta_mean)
