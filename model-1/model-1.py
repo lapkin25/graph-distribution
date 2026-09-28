@@ -15,8 +15,8 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 
 #G = nx.karate_club_graph()
 
-source = 5
-destination = 6
+source = 6
+destination = 5
 
 
 """
@@ -37,6 +37,9 @@ def get_initial_orientation(G, start, finish):
     #path = nx.shortest_path(G, start, finish)
     #print(path)
 
+
+    # Предпоследняя версия...
+    """ 
     # Вычисляем порядок обхода BFS...
     numbering = {}
     k = 0
@@ -44,6 +47,21 @@ def get_initial_orientation(G, start, finish):
     for u, v in nx.bfs_edges(G, start):
         k += 1
         numbering[v] = k
+    """
+
+    # Рассчитываем направление тока по графу из start в finish...
+    L = nx.laplacian_matrix(G).toarray().astype(float)  # матрица Лапласа
+    nodes = list(G.nodes())
+    idx = {n: i for i, n in enumerate(nodes)}
+    # граничные условия
+    b = np.zeros(len(nodes))
+    for node, val in ((start, 1.0), (finish, 0.0)):
+        i = idx[node]
+        L[i] = 0
+        L[i][i] = 1
+        b[i] = val
+    U = np.linalg.solve(L, b)
+    numbering = {n: -U[idx[n]] for n in nodes}
 
     """
     for i in range(len(path) - 1):
