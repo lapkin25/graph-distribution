@@ -9,14 +9,22 @@ G = nx.Graph()
 #G.add_nodes_from([1, 2, 3, 4])
 #G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
+"""
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
+"""
+
+G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
+G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
+                  ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
+                  ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
+                  ('l', 'm'), ('l', 'n'), ('l', 'o')])
 
 #G = nx.karate_club_graph()
 
-source = 6
-destination = 5
+source = 'k'
+destination = 'c'
 
 
 """
@@ -83,16 +91,25 @@ def get_initial_orientation(G, start, finish):
             k += 1
             numbering[nearest_node] = k
     """
-    #print(numbering)
+    print("start =", start, "finish =", finish)
+    for u, v in numbering.items():
+        print(f"{u} -> {v}")
 
     # Направляем рёбра от меньших номеров к большим...
     G1 = nx.DiGraph()
     # добавить к орграфу ребра неориентированного графа
     for u, v, data in G.edges(data=True):
-        if numbering[u] < numbering[v]:
+        print(u, v)
+        if (u == start or v == finish) or\
+            (not (v == start or u == finish) and numbering[u] < numbering[v] - 1e-9):
             G1.add_edge(u, v, num=data['num'])
-        else:
+        elif numbering[u] > numbering[v] + 1e-9:
             G1.add_edge(v, u, num=data['num'])
+        else:  # numbering[u] ~= numbering[v]
+            if nx.shortest_path_length(G, start, u) < nx.shortest_path_length(G, start, v):
+                G1.add_edge(u, v, num=data['num'])
+            else:
+                G1.add_edge(v, u, num=data['num'])
 
     """
     # TODO: придётся перевернуть некоторые рёбра, чтобы получилась корректная ориентировка
@@ -111,9 +128,9 @@ def is_orientation_correct(orientation, start, finish):
           start - начальная вершина
           finish - конечная вершина
     Выход: является ли ориентировка корректной, то есть:
-      а) в каждой вершине (кроме start) есть входящие рёбра
+      -- (?) а) в каждой вершине (кроме start) есть входящие рёбра
       -- б) в каждой вершине (кроме finish) есть исходящие рёбра
-      в) в вершине start нет входящих рёбер
+      -- (?) в) в вершине start нет входящих рёбер
       -- г) в вершине finish нет исходящих рёбер
       д) вершина finish достижима из вершины start
       е) в графе нет циклов
@@ -347,6 +364,10 @@ for s in G.nodes():
 
 
 orientation0 = get_initial_orientation(G, source, destination)
+for u, v in orientation0.edges:
+    print(u, '->', v)
+
+
 """
 orientation0 = nx.DiGraph()
 orientation0.add_nodes_from([1, 2, 3, 4])
