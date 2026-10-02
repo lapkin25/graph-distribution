@@ -27,6 +27,15 @@ source = 'k'
 destination = 'c'
 
 
+# resistance distance
+print("resistance distance ", source, '->', destination, ":", nx.resistance_distance(G, source, destination))
+
+for u in G.nodes():
+    for v in G.nodes():
+        print(u, '->', v, ":", nx.resistance_distance(G, u, v))
+
+
+
 """
 Начало раздела "функции"
 """
