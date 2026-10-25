@@ -14,17 +14,29 @@ G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 """
-
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+"""
+
+
+G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'Z'])
+G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
+                  ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
+                  ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
+                  ('l', 'm'), ('l', 'n'), ('l', 'o'),
+                  ('a', 'Z'), ('b', 'Z'), ('c', 'Z'), ('d', 'Z'), ('e', 'Z'), ('f', 'Z'),
+                  ('g', 'Z'), ('h', 'Z'), ('i', 'Z'), ('j', 'Z'), ('k', 'Z'), ('l', 'Z'), ('m', 'Z'),
+                  ('n', 'Z'), ('o', 'Z')])
+
 
 #G = nx.karate_club_graph()
 
-source = 'k'
-destination = 'c'
+source = 'a'
+destination = 'Z'
 
 
 # resistance distance
@@ -192,6 +204,7 @@ def calc_variance(orientation, alpha, start, finish):
             alpha_v = alpha[data['num']]  # коэффициент на ребре (v, u)
             # рассчитываем коэффициенты в вершине u
             beta[u] += alpha_v * beta[v]
+
             beta[u][data['num']] += alpha_v * 1.0  # единичная дисперсия всех шумов
             # TODO: поменять 1 на произвольные числа на рёбрах
 
@@ -259,6 +272,8 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     rhs = np.ones(num_constraints)
     # - создаем линейное ограничение типа "равенство"
     linear_constraint = LinearConstraint(A, rhs, rhs)
+
+
     # решение задачи оптимизации
     res = minimize(objective_function, initial_alpha, method='trust-constr',
                    constraints=linear_constraint, bounds=bounds)  #, options={'verbose': 1})
@@ -382,8 +397,10 @@ orientation0 = nx.DiGraph()
 orientation0.add_nodes_from([1, 2, 3, 4])
 orientation0.add_edges_from([(1, 2, {'num': 0}), (1, 3, {'num': 1}), (2, 4, {'num': 2}), (4, 3, {'num': 3}), (2, 3, {'num': 4}), (4, 5, {'num': 5})])
 """
+
 optimal_orientation = optimize_orientation(G, source, destination, orientation0, verbose=True)
 #optimal_orientation = orientation0
+
 
 alpha0 = get_initial_alphas(optimal_orientation)
 opt_alpha = optimize_coefs(optimal_orientation, alpha0, source, destination)
@@ -420,5 +437,3 @@ nx.draw(
 plt.savefig("fig1.eps", format='eps')
 # Показываем график
 plt.show()
-
-

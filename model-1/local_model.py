@@ -119,17 +119,17 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (24, 43), (43, 44), (44, 45)])
 """
 
-G = nx.krackhardt_kite_graph()
+#G = nx.krackhardt_kite_graph()
 
-"""
+
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
-"""
 
-source = 0  #'a'
+
+source = 'a'
 
 
 
@@ -295,6 +295,40 @@ print("variance = ", np.sum(beta ** 2, axis=1))
 for i in range(len(digraph.edges())):
     print(list(digraph.edges())[i], '->', alpha[i])
 
+"""
+potentials = np.zeros(len(digraph.nodes))
+source_ind = digraph.nodes[source]['vert_num']
+potentials[source_ind] = 1.0
+for _, v, data in digraph.out_edges(source, data=True):
+    print('test')
+    edge_ind = data['num']  # индекс ребра (source, v)
+    v_ind = digraph.nodes[v]['vert_num']
+    potentials[v_ind] = potentials[source_ind] - beta[v_ind][edge_ind]
+print(potentials)
+"""
+
+potentials = np.zeros(len(digraph.nodes))
+#source_ind = digraph.nodes[source]['vert_num']
+#potentials[source_ind] = 1.0
+for u, v in nx.bfs_edges(digraph, source):
+    edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+    edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+    u_ind = digraph.nodes[u]['vert_num']
+    v_ind = digraph.nodes[v]['vert_num']
+    potentials[v_ind] = potentials[u_ind] + beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+print("Рассчитанные потенциалы:", potentials)
+
+for u, v in digraph.edges():
+    edge_ind = digraph.edges[u, v]['num']
+    edge2_ind = digraph.edges[v, u]['num']
+    u_ind = digraph.nodes[u]['vert_num']
+    v_ind = digraph.nodes[v]['vert_num']
+    print(u, v, ' -> ', potentials[v_ind] - potentials[u_ind], beta[v_ind][edge_ind] - beta[u_ind][edge2_ind])
+
+# TODO: рассчитать alpha!
+
+
+"""
 print("Упрощенная модель...")
 alpha = alpha0.copy()
 disp = np.zeros(len(digraph.nodes()))
@@ -313,9 +347,9 @@ print("disp = ", disp)
 
 for i in range(len(digraph.edges())):
     print(list(digraph.edges())[i], '->', alpha[i])
+"""
 
-
-
+"""
 # Расчет матрицы дисперсий между всеми парами вершин...
 
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
@@ -357,6 +391,8 @@ print(np.mean(np.vstack(alpha_history), axis=0))
 #beta_mean = np.mean(np.vstack(beta_history), axis=1)
 #print("Средние beta:")
 #print(beta_mean)
+"""
+
 
 """
 rho = np.zeros((len(G.nodes()), len(G.nodes())))
@@ -376,7 +412,7 @@ print("mean rho =", np.mean(rho, axis=1))
 # какой будет средняя ошибка на графе, если источником будет выбранная вершина?
 """
 
-
+"""
 # Расчет для каждого ребра e средней величины beta[v, e], где u - источник
 # (среднее участие ребра при передаче информации по графу - аналог betweenness)
 avg_beta = np.zeros(len(digraph.edges()))
@@ -390,7 +426,7 @@ print("Ребра ", digraph.edges())
 print("avg_beta = ", avg_beta)
 for i, (val, val2) in enumerate(zip(avg_beta, avg_beta_2)):
     print(edges_list[i], '->', val, ';', val2)
-
+"""
 
 
 """
