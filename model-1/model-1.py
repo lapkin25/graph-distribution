@@ -14,15 +14,15 @@ G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 """
-"""
+
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+
+
 """
-
-
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'Z'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
@@ -31,12 +31,12 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('a', 'Z'), ('b', 'Z'), ('c', 'Z'), ('d', 'Z'), ('e', 'Z'), ('f', 'Z'),
                   ('g', 'Z'), ('h', 'Z'), ('i', 'Z'), ('j', 'Z'), ('k', 'Z'), ('l', 'Z'), ('m', 'Z'),
                   ('n', 'Z'), ('o', 'Z')])
-
+"""
 
 #G = nx.karate_club_graph()
 
 source = 'a'
-destination = 'Z'
+destination = 'l'
 
 
 # resistance distance
@@ -91,6 +91,20 @@ def get_initial_orientation(G, start, finish):
         b[i] = val
     U = np.linalg.solve(L, b)
     numbering = {n: -U[idx[n]] for n in nodes}
+
+    print("Узлы:", nodes)
+    print("Потенциалы узлов:", (1 - U))
+    print("Рассчитанные потенциалы:", U)
+    for u in G.nodes():
+        #u_ind = G.nodes[u]['vert_num']
+        u_ind = nodes.index(u)
+        sum_currents = 0
+        for _, v, data in G.edges(u, data=True):
+            #v_ind = G.nodes[v]['vert_num']
+            v_ind = nodes.index(v)
+            sum_currents += U[v_ind] - U[u_ind]
+        print(f"Вершина {u}: сумма токов равна {sum_currents}")
+
 
     """
     for i in range(len(path) - 1):

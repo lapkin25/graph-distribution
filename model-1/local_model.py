@@ -307,26 +307,42 @@ for _, v, data in digraph.out_edges(source, data=True):
 print(potentials)
 """
 
-potentials = np.zeros(len(digraph.nodes))
-#source_ind = digraph.nodes[source]['vert_num']
-#potentials[source_ind] = 1.0
-for u, v in nx.bfs_edges(digraph, source):
-    edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
-    edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
-    u_ind = digraph.nodes[u]['vert_num']
-    v_ind = digraph.nodes[v]['vert_num']
-    potentials[v_ind] = potentials[u_ind] + beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
-print("Рассчитанные потенциалы:", potentials)
+def calc_potentials(digraph, source, beta):
+    potentials = np.zeros(len(digraph.nodes))
+    #source_ind = digraph.nodes[source]['vert_num']
+    #potentials[source_ind] = 1.0
+    for u, v in nx.bfs_edges(digraph, source):
+        edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+        edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+        u_ind = digraph.nodes[u]['vert_num']
+        v_ind = digraph.nodes[v]['vert_num']
+        potentials[v_ind] = potentials[u_ind] + beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+    print("Рассчитанные потенциалы:", potentials)
+    sum_currents_sources = 0
+    for u in digraph.nodes():
+        u_ind = digraph.nodes[u]['vert_num']
+        sum_currents = 0
+        for _, v in digraph.out_edges(u):
+            v_ind = digraph.nodes[v]['vert_num']
+            sum_currents += potentials[v_ind] - potentials[u_ind]
+            #edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+            #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+            #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+        print(f"Вершина {u}: сумма токов равна {sum_currents}")
+        sum_currents_sources += sum_currents
+    print("Сумма правых частей =", sum_currents_sources)
+    """
+    for u, v in digraph.edges():
+        edge_ind = digraph.edges[u, v]['num']
+        edge2_ind = digraph.edges[v, u]['num']
+        u_ind = digraph.nodes[u]['vert_num']
+        v_ind = digraph.nodes[v]['vert_num']
+        print(u, v, ' -> ', potentials[v_ind] - potentials[u_ind], beta[v_ind][edge_ind] - beta[u_ind][edge2_ind])
+    """
+    # TODO: рассчитать alpha!
+    return potentials
 
-for u, v in digraph.edges():
-    edge_ind = digraph.edges[u, v]['num']
-    edge2_ind = digraph.edges[v, u]['num']
-    u_ind = digraph.nodes[u]['vert_num']
-    v_ind = digraph.nodes[v]['vert_num']
-    print(u, v, ' -> ', potentials[v_ind] - potentials[u_ind], beta[v_ind][edge_ind] - beta[u_ind][edge2_ind])
-
-# TODO: рассчитать alpha!
-
+calc_potentials(digraph, source, beta)
 
 """
 print("Упрощенная модель...")
@@ -349,14 +365,15 @@ for i in range(len(digraph.edges())):
     print(list(digraph.edges())[i], '->', alpha[i])
 """
 
-"""
-# Расчет матрицы дисперсий между всеми парами вершин...
 
+# Расчет матрицы дисперсий между всеми парами вершин...
+"""
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
 nodes_list = []  # все вершины графа в порядке перечисления
 cnt = 0
 alpha_history = []
-beta_history = [[] for _ in range(len(G.nodes()))]
+beta_history = [[] for _ in range(len(G.nodes))]
+sum_potentials = np.zeros(len(G.nodes))
 for src in G.nodes():
     print("\n\nИсточник =", src)
     # вычисление начальных приближений для коэффициентов
@@ -377,6 +394,8 @@ for src in G.nodes():
     #print("alpha = ", alpha)
     #print("beta = ", beta)
     #print("variance = ", np.sum(beta ** 2, axis=1))
+    potentials = calc_potentials(digraph, src, beta)
+    sum_potentials += potentials
 print("\nМатрица дисперсий:")
 print(var_matrix)
 print("Вершины:")
@@ -388,6 +407,18 @@ for line in alpha_history:
     print(line)
 print("Средние alpha:")
 print(np.mean(np.vstack(alpha_history), axis=0))
+print("СУММАРНЫЙ ПОТЕНЦИАЛ", sum_potentials)
+for u in digraph.nodes():
+    u_ind = digraph.nodes[u]['vert_num']
+    sum_currents = 0
+    for _, v in digraph.out_edges(u):
+        v_ind = digraph.nodes[v]['vert_num']
+        sum_currents += sum_potentials[v_ind] - sum_potentials[u_ind]
+        #edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+        #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+        #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+    print(f"Вершина {u}: сумма токов равна {sum_currents}")
+
 #beta_mean = np.mean(np.vstack(beta_history), axis=1)
 #print("Средние beta:")
 #print(beta_mean)
