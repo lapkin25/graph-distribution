@@ -7,14 +7,30 @@ import random
 
 G = nx.Graph()
 
-#G.add_nodes_from([1, 2, 3, 4])
-#G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+"""
+G.add_nodes_from([1, 2, 3, 4])
+G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
+"""
+
+"""
+G.add_nodes_from([1, 2, 3])
+G.add_edges_from([(1, 2), (1, 3), (2, 3)])
+"""
+
+"""
+G.add_nodes_from([1, 2, 3, 4, 5])
+G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
+"""
+
+#G.add_nodes_from([1, 2, 3, 4, 5, 6, 7])
+#G.add_edges_from([(2, 3), (3, 4), (3, 5), (4, 5), (2, 6), (2, 7), (6, 7), (1, 5), (1, 6)])
+
 
 #G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 #                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-#G = nx.karate_club_graph()
+G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
 """
@@ -121,15 +137,15 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
 
 #G = nx.krackhardt_kite_graph()
 
-
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+"""
 
-
-source = 'a'
+source = 30  #'a'
 
 
 
@@ -321,14 +337,19 @@ def calc_potentials(digraph, source, beta):
     sum_currents_sources = 0
     for u in digraph.nodes():
         u_ind = digraph.nodes[u]['vert_num']
-        sum_currents = 0
+        sum_currents = 0.0
+        sum_out_currents = 0.0
+        sum_in_currents = 0.0
         for _, v in digraph.out_edges(u):
             v_ind = digraph.nodes[v]['vert_num']
             sum_currents += potentials[v_ind] - potentials[u_ind]
-            #edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
-            #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+            edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+            edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
             #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
-        print(f"Вершина {u}: сумма токов равна {sum_currents}")
+            sum_out_currents += beta[v_ind][edge_ind]
+            sum_in_currents += beta[u_ind][edge2_ind]
+            print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v_ind][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u_ind][edge2_ind]}")
+        print(f"Вершина {u}: сумма токов равна {sum_currents}; входящие {sum_in_currents}, исходящие {sum_out_currents}")
         sum_currents_sources += sum_currents
     print("Сумма правых частей =", sum_currents_sources)
     """
