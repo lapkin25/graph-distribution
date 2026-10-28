@@ -36,7 +36,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
 #G = nx.karate_club_graph()
 
 source = 'a'
-destination = 'l'
+destination = 'o'
 
 
 # resistance distance
@@ -430,6 +430,20 @@ for v in optimal_orientation.nodes():
 #print(optimize_coefs(orientation0, alpha0, 1, 4))
 #print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
 #print(orientation0.edges())
+
+sum_currents_sources = 0
+for u in optimal_orientation.nodes():
+    #u_ind = list(G.nodes()).index(u)
+    sum_currents = 0.0
+    for _, v in optimal_orientation.out_edges(u):
+        #v_ind = list(G.nodes()).index(v)
+        sum_currents += var[v] - var[u]
+    for v, _ in optimal_orientation.in_edges(u):
+        #v_ind = list(G.nodes()).index(v)
+        sum_currents += var[v] - var[u]
+    print(f"Вершина {u}: сумма токов равна {sum_currents}")
+    sum_currents_sources += sum_currents
+print("Сумма правых частей =", sum_currents_sources)
 
 
 import matplotlib.pyplot as plt
