@@ -388,6 +388,73 @@ for v in digraph.nodes():
 # TODO: запустить модель I с рассчитанными коэффициентами alpha
 # сравнить - получатся ли такие же дисперсии?
 
+orientation = nx.DiGraph()
+for u, v, data in digraph.edges(data=True):
+    u_ind = digraph.nodes[u]['vert_num']
+    v_ind = digraph.nodes[v]['vert_num']
+    if potentials[u] < potentials[v]:
+        orientation.add_edge(u, v, num=data['num'])
+
+def calc_variance(orientation, alpha, start):
+    """
+    Вход: orientation - орграф (ориентировка)
+          alpha - вектор коэффициентов (на всех рёбрах)
+          start - начальная вершина
+          finish - конечная вершина
+    Выход: variance - вектор дисперсий сигнала во всех вершинах
+    """
+
+    # определить порядок обработки вершин графа (топологическая сортировка)
+    topsort = list(nx.topological_sort(orientation))
+
+    # Посчитать коэффициенты при шумах на всех рёбрах...
+    # словарь "вершина -> массив коэффициентов при шумах на всех рёбрах"
+    #beta = {start: np.zeros(len(orientation.edges()))}
+    beta = {start: np.zeros(len(digraph.edges()))}  # digraph - внешняя переменная!
+    # для каждой вершины...
+    for u in topsort:
+        #beta[u] = np.zeros(len(orientation.edges()))
+        beta[u] = np.zeros(len(digraph.edges()))  # digraph - внешняя переменная!
+        # перебрать все входящие рёбра
+        for v, _, data in orientation.in_edges(u, data=True):
+            # v - вершина, из которой идёт ребро в u
+            alpha_v = alpha[data['num']]  # коэффициент на ребре (v, u)
+            # рассчитываем коэффициенты в вершине u
+            beta[u] += alpha_v * beta[v]
+
+            beta[u][data['num']] += alpha_v * 1.0  # единичная дисперсия всех шумов
+            # TODO: поменять 1 на произвольные числа на рёбрах
+
+    # Вычислить дисперсии во всех вершинах как сумму квадратов коэффициентов...
+    variance = {}  # словарь "вершина -> дисперсия в этой вершине"
+    for v in orientation.nodes():
+        if v in beta:
+            variance[v] = np.sum(beta[v] ** 2)
+        else:
+            variance[v] = np.inf
+
+    return variance, beta
+
+var, beta = calc_variance(orientation, alpha_hat, source)
+#print(var)
+print("Дисперсии на вершинах:")
+for v in orientation.nodes():
+    print(v, "->", var[v])
+
+sum_currents_sources = 0
+for u in orientation.nodes():
+    #u_ind = list(G.nodes()).index(u)
+    sum_currents = 0.0
+    for _, v, data in orientation.out_edges(u, data=True):
+        #v_ind = list(G.nodes()).index(v)
+        sum_currents += beta[v][data['num']]
+    for v, _, data in orientation.in_edges(u, data=True):
+        #v_ind = list(G.nodes()).index(v)
+        sum_currents -= beta[u][data['num']]
+    print(f"Вершина {u}: сумма токов равна {sum_currents}")
+    sum_currents_sources += sum_currents
+print("Сумма правых частей =", sum_currents_sources)
+
 
 """
 print("Упрощенная модель...")
@@ -527,7 +594,8 @@ pos = nx.spring_layout(G, seed=42)
 
 # Рисуем граф
 nx.draw(
-    G,
+    #G,
+    orientation,
     pos,
     with_labels=True,  # Показывать метки узлов  # убрать, если надо поменять метки
     node_color="lightblue",  # Цвет узлов
