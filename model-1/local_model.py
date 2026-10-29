@@ -348,8 +348,13 @@ def calc_potentials(digraph, source, beta):
             #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
             sum_out_currents += beta[v_ind][edge_ind]
             sum_in_currents += beta[u_ind][edge2_ind]
-            # print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v_ind][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u_ind][edge2_ind]}")
+            print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v_ind][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u_ind][edge2_ind]}")
+            print(f"      ребро {u}, {v} -> alpha[({u}, {v})] = {alpha[edge_ind]}")
+            print(f"      ребро {v}, {u} -> alpha[({v}, {u})] = {alpha[edge2_ind]}")
         print(f"Вершина {u}: сумма токов равна {sum_currents}; входящие {sum_in_currents}, исходящие {sum_out_currents}")
+        for _, v in digraph.out_edges(u):
+            edge2_ind = digraph.edges[v, u]['num']
+            print(f"   проверка: {alpha[edge2_ind]} == {beta[u_ind][edge2_ind] / sum_in_currents}")
         sum_currents_sources += sum_currents
     print("Сумма правых частей =", sum_currents_sources)
     """
@@ -436,6 +441,7 @@ def calc_variance(orientation, alpha, start):
     return variance, beta
 
 var, beta = calc_variance(orientation, alpha_hat, source)
+#var, beta = calc_variance(orientation, alpha, source)
 #print(var)
 print("Дисперсии на вершинах:")
 for v in orientation.nodes():
