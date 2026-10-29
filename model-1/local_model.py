@@ -135,17 +135,17 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (24, 43), (43, 44), (44, 45)])
 """
 
-#G = nx.krackhardt_kite_graph()
+G = nx.krackhardt_kite_graph()
 
-
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+"""
 
-
-source = 'a'
+source = 1  #'a'
 
 
 
@@ -348,7 +348,7 @@ def calc_potentials(digraph, source, beta):
             #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
             sum_out_currents += beta[v_ind][edge_ind]
             sum_in_currents += beta[u_ind][edge2_ind]
-            print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v_ind][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u_ind][edge2_ind]}")
+            # print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v_ind][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u_ind][edge2_ind]}")
         print(f"Вершина {u}: сумма токов равна {sum_currents}; входящие {sum_in_currents}, исходящие {sum_out_currents}")
         sum_currents_sources += sum_currents
     print("Сумма правых частей =", sum_currents_sources)
@@ -363,7 +363,31 @@ def calc_potentials(digraph, source, beta):
     # TODO: рассчитать alpha!
     return potentials
 
-calc_potentials(digraph, source, beta)
+potentials = calc_potentials(digraph, source, beta)
+
+alpha_hat = np.zeros(len(digraph.edges()))
+for v in digraph.nodes():
+    v_ind = digraph.nodes[v]['vert_num']
+    currents = []
+    for u, _ in digraph.in_edges(v):
+        u_ind = digraph.nodes[u]['vert_num']
+        #edge_ind = digraph.edges[u, v]['num']
+        #edge2_ind = digraph.edges[v, u]['num']
+        current = potentials[v_ind] - potentials[u_ind]
+        if current > 0:
+            currents.append((current, u))
+    sum_currents = sum([c for c, _ in currents])
+    if sum_currents > 0:
+        for c, u in currents:
+            u_ind = digraph.nodes[u]['vert_num']
+            edge_ind = digraph.edges[u, v]['num']
+            #edge2_ind = digraph.edges[v, u]['num']
+            alpha_hat[edge_ind] = c / sum_currents
+            print(f"ребро ({u}, {v}) -> alpha = {alpha_hat[edge_ind]}")
+
+# TODO: запустить модель I с рассчитанными коэффициентами alpha
+# сравнить - получатся ли такие же дисперсии?
+
 
 """
 print("Упрощенная модель...")
