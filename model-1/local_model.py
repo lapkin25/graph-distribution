@@ -62,7 +62,7 @@ G.add_edges_from([(1, 11), (1, 10), (1, 5), (1, 6),
                   (29, 30)])
 """
 
-"""
+
 G.add_nodes_from(list(range(1, 37)))
 G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (1, 7), (2, 8), (3, 9), (4, 10), (5, 11), (6, 12),
@@ -75,7 +75,7 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (25, 26), (26, 27), (27, 28), (28, 29), (29, 30),
                   (25, 31), (26, 32), (27, 33), (28, 34), (29, 35), (30, 36),
                   (31, 32), (32, 33), (33, 34), (34, 35), (35, 36)])
-"""
+
 
 """
 G.add_nodes_from(list(range(1, 37)))
@@ -135,7 +135,7 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (24, 43), (43, 44), (44, 45)])
 """
 
-G = nx.krackhardt_kite_graph()
+#G = nx.krackhardt_kite_graph()
 
 """
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
@@ -145,7 +145,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
 """
 
-source = 1  #'a'
+source = 15  #'a'
 
 
 
@@ -397,7 +397,7 @@ orientation = nx.DiGraph()
 for u, v, data in digraph.edges(data=True):
     u_ind = digraph.nodes[u]['vert_num']
     v_ind = digraph.nodes[v]['vert_num']
-    if potentials[u] < potentials[v]:
+    if potentials[u_ind] < potentials[v_ind]:
         orientation.add_edge(u, v, num=data['num'])
 
 def calc_variance(orientation, alpha, start):
@@ -448,6 +448,7 @@ for v in orientation.nodes():
     print(v, "->", var[v])
 
 sum_currents_sources = 0
+rhs = {}
 for u in orientation.nodes():
     #u_ind = list(G.nodes()).index(u)
     sum_currents = 0.0
@@ -458,6 +459,7 @@ for u in orientation.nodes():
         #v_ind = list(G.nodes()).index(v)
         sum_currents -= beta[u][data['num']]
     print(f"Вершина {u}: сумма токов равна {sum_currents}")
+    rhs[u] = sum_currents
     sum_currents_sources += sum_currents
 print("Сумма правых частей =", sum_currents_sources)
 
@@ -616,4 +618,42 @@ nx.draw(
 
 plt.savefig("fig2.eps", format='eps')
 # Показываем график
+plt.show()
+
+print(rhs)
+from matplotlib.colors import TwoSlopeNorm
+
+nx.set_node_attributes(orientation, rhs, "rhs")
+# --- 2. Нормализация вокруг нуля ---
+rhs_min = min(rhs.values())
+rhs_max = max(rhs.values())
+# TwoSlopeNorm делает так, чтобы 0 был ровно серединой палитры
+norm = TwoSlopeNorm(vmin=rhs_min, vcenter=0.0, vmax=rhs_max)
+cmap = plt.cm.coolwarm
+
+node_colors = [cmap(norm(rhs[n])) for n in orientation.nodes]
+
+pos = nx.spring_layout(orientation, seed=42)
+
+fig, ax = plt.subplots(figsize=(9, 7))
+
+nodes = nx.draw_networkx_nodes(
+    orientation, pos,
+    node_color=node_colors,   # <-- список RGB(A) кортежей
+    node_size=450,
+    edgecolors="black",
+    linewidths=0.6,
+    ax=ax,
+)
+nx.draw_networkx_edges(orientation, pos, alpha=0.3, ax=ax)
+nx.draw_networkx_labels(orientation, pos, font_size=7, font_color="black", ax=ax)
+
+sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+sm.set_array([])  # формальность для совместимости
+cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.02)
+cbar.set_label("Значение узла")
+
+ax.set_title(f"Источник - {source}")
+ax.axis("off")
+plt.tight_layout()
 plt.show()
