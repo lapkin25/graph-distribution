@@ -633,7 +633,8 @@ cmap = plt.cm.coolwarm
 
 node_colors = [cmap(norm(rhs[n])) for n in orientation.nodes]
 
-pos = nx.spring_layout(orientation, seed=42)
+#pos = nx.spring_layout(orientation, seed=42)
+pos = nx.spring_layout(G, seed=42)
 
 fig, ax = plt.subplots(figsize=(9, 7))
 
