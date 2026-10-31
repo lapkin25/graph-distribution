@@ -9,19 +9,19 @@ G = nx.Graph()
 #G.add_nodes_from([1, 2, 3, 4])
 #G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
-"""
+
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
 G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
+
+
 """
-
-
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
-
+"""
 
 """
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'Z'])
@@ -36,8 +36,8 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
 
 #G = nx.karate_club_graph()
 
-source = 'a'
-destination = 'l'
+source = 1   #'a'
+destination = 5  #'o'
 
 
 # resistance distance
@@ -200,7 +200,7 @@ def is_orientation_correct(orientation, start, finish):
     return True
 
 
-def calc_variance(orientation, alpha, start, finish):
+def calc_variance(orientation, alpha, start, finish, return_beta=False):
     """
     Вход: orientation - орграф (ориентировка)
           alpha - вектор коэффициентов (на всех рёбрах)
@@ -238,7 +238,10 @@ def calc_variance(orientation, alpha, start, finish):
         else:
             variance[v] = np.inf
 
-    return variance
+    if not return_beta:
+        return variance
+    else:
+        return variance, beta
 
 
 def get_initial_alphas(orientation):
@@ -423,8 +426,8 @@ orientation0.add_nodes_from([1, 2, 3, 4])
 orientation0.add_edges_from([(1, 2, {'num': 0}), (1, 3, {'num': 1}), (2, 4, {'num': 2}), (4, 3, {'num': 3}), (2, 3, {'num': 4}), (4, 5, {'num': 5})])
 """
 
-optimal_orientation = optimize_orientation(G, source, destination, orientation0, verbose=True)
-#optimal_orientation = orientation0
+#optimal_orientation = optimize_orientation(G, source, destination, orientation0, verbose=True)
+optimal_orientation = orientation0
 
 
 alpha0 = get_initial_alphas(optimal_orientation)
@@ -456,6 +459,76 @@ for u in optimal_orientation.nodes():
     print(f"Вершина {u}: сумма токов равна {sum_currents}")
     sum_currents_sources += sum_currents
 print("Сумма правых частей =", sum_currents_sources)
+
+
+def calc_potentials(digraph, source, destination, alpha):
+    potentials = np.zeros(len(digraph.nodes))
+    #source_ind = digraph.nodes[source]['vert_num']
+    #potentials[source_ind] = 1.0
+    variances, beta = calc_variance(digraph, alpha, source, destination, return_beta=True)
+    """
+    for u, v in nx.bfs_edges(digraph, source):
+        edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+        edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+        u_ind = digraph.nodes[u]['vert_num']
+        v_ind = digraph.nodes[v]['vert_num']
+        potentials[v_ind] = potentials[u_ind] + beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+    print("Рассчитанные потенциалы:", potentials)
+    """
+
+    # Рассчитываем направление тока по графу из start в finish...
+    L = nx.laplacian_matrix(G).toarray().astype(float)  # матрица Лапласа
+    nodes = list(G.nodes())
+    idx = {n: i for i, n in enumerate(nodes)}
+    # граничные условия
+    b = np.zeros(len(nodes))
+    for node, val in ((source, 1.0), (destination, 0.0)):
+        i = idx[node]
+        L[i] = 0
+        L[i][i] = 1
+        b[i] = val
+    U = np.linalg.solve(L, b) * variances[destination] #5.142857142857146
+
+    sum_currents_sources = 0
+    for u in digraph.nodes():
+        #u_ind = digraph.nodes[u]['vert_num']
+        sum_currents = 0.0
+        sum_out_currents = 0.0
+        sum_in_currents = 0.0
+        for _, v in digraph.out_edges(u):
+            #v_ind = digraph.nodes[v]['vert_num']
+            sum_currents += variances[v] - variances[u]
+            edge_ind = digraph.edges[u, v]['num']  # индекс ребра (u, v)
+            #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
+            #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
+            #sum_out_currents += beta[v_ind][edge_ind]
+            #sum_in_currents += beta[u_ind][edge2_ind]
+            v_ind = nodes.index(v)
+            u_ind = nodes.index(u)
+            print(f"разность потенциалов = {(U[u_ind] - U[v_ind])};  ток = {beta[destination][edge_ind]}")
+            #print(f"разность потенциалов = {(variances[v] - variances[u])};  ток = {beta[v][edge_ind]}")
+            #print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u][edge2_ind]}")
+            #print(f"      ребро {u}, {v} -> alpha[({u}, {v})] = {alpha[edge_ind]}")
+            #print(f"      ребро {v}, {u} -> alpha[({v}, {u})] = {alpha[edge2_ind]}")
+        print(f"Вершина {u}: сумма токов равна {sum_currents}")  #; входящие {sum_in_currents}, исходящие {sum_out_currents}")
+        #for _, v in digraph.out_edges(u):
+        #    edge2_ind = digraph.edges[v, u]['num']
+        #    print(f"   проверка: {alpha[edge2_ind]} == {beta[u_ind][edge2_ind] / sum_in_currents}")
+        sum_currents_sources += sum_currents
+    print("Сумма правых частей =", sum_currents_sources)
+    """
+    for u, v in digraph.edges():
+        edge_ind = digraph.edges[u, v]['num']
+        edge2_ind = digraph.edges[v, u]['num']
+        u_ind = digraph.nodes[u]['vert_num']
+        v_ind = digraph.nodes[v]['vert_num']
+        print(u, v, ' -> ', potentials[v_ind] - potentials[u_ind], beta[v_ind][edge_ind] - beta[u_ind][edge2_ind])
+    """
+    # TODO: рассчитать alpha!
+    return potentials
+
+potentials = calc_potentials(optimal_orientation, source, destination, opt_alpha)
+
 
 
 import matplotlib.pyplot as plt
