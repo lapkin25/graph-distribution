@@ -62,7 +62,7 @@ G.add_edges_from([(1, 11), (1, 10), (1, 5), (1, 6),
                   (29, 30)])
 """
 
-
+"""
 G.add_nodes_from(list(range(1, 37)))
 G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (1, 7), (2, 8), (3, 9), (4, 10), (5, 11), (6, 12),
@@ -75,7 +75,7 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
                   (25, 26), (26, 27), (27, 28), (28, 29), (29, 30),
                   (25, 31), (26, 32), (27, 33), (28, 34), (29, 35), (30, 36),
                   (31, 32), (32, 33), (33, 34), (34, 35), (35, 36)])
-
+"""
 
 """
 G.add_nodes_from(list(range(1, 37)))
@@ -137,15 +137,15 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
 
 #G = nx.krackhardt_kite_graph()
 
-"""
+
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
-"""
 
-source = 15  #'a'
+
+source = 'a'
 
 
 
@@ -445,7 +445,7 @@ var, beta = calc_variance(orientation, alpha_hat, source)
 #print(var)
 print("Дисперсии на вершинах:")
 for v in orientation.nodes():
-    print(v, "->", var[v])
+    print(v, "->", var[v], "  => resistance distance(s, v) =", nx.resistance_distance(G, source, v))
 
 sum_currents_sources = 0
 rhs = {}

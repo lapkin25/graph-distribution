@@ -15,14 +15,15 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 """
 
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
-
-
 """
+
+
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'Z'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
@@ -31,12 +32,12 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('a', 'Z'), ('b', 'Z'), ('c', 'Z'), ('d', 'Z'), ('e', 'Z'), ('f', 'Z'),
                   ('g', 'Z'), ('h', 'Z'), ('i', 'Z'), ('j', 'Z'), ('k', 'Z'), ('l', 'Z'), ('m', 'Z'),
                   ('n', 'Z'), ('o', 'Z')])
-"""
+
 
 #G = nx.karate_club_graph()
 
 source = 'a'
-destination = 'o'
+destination = 'Z'
 
 
 # resistance distance
@@ -45,7 +46,14 @@ print("resistance distance ", source, '->', destination, ":", nx.resistance_dist
 for u in G.nodes():
     for v in G.nodes():
         print(u, '->', v, ":", nx.resistance_distance(G, u, v))
-
+"""
+dist = {v: nx.resistance_distance(G, source, v) for v in G.nodes()}
+for u in G.nodes():
+    sum_currents = 0
+    for _, v, data in G.edges(u, data=True):
+        sum_currents += dist[v] - dist[u]
+    print(f"Вершина {u}: сумма токов равна {sum_currents}")
+"""
 
 
 """
@@ -406,6 +414,7 @@ for u, v in orientation0.edges:
     print(u, '->', v)
 
 
+
 """
 orientation0 = nx.DiGraph()
 orientation0.add_nodes_from([1, 2, 3, 4])
@@ -425,7 +434,8 @@ for i, (u, v) in enumerate(optimal_orientation.edges()):
 var = calc_variance(optimal_orientation, opt_alpha, source, destination)
 print("Дисперсии на вершинах:")
 for v in optimal_orientation.nodes():
-    print(v, "->", var[v])
+    print(v, "->", var[v], "  => resistance distance(s, v) =", nx.resistance_distance(G, source, v))
+
 
 #print(optimize_coefs(orientation0, alpha0, 1, 4))
 #print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
