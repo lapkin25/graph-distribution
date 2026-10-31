@@ -15,15 +15,15 @@ G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
                   (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 """
 
-"""
+
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+
+
 """
-
-
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'Z'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
@@ -32,12 +32,12 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('a', 'Z'), ('b', 'Z'), ('c', 'Z'), ('d', 'Z'), ('e', 'Z'), ('f', 'Z'),
                   ('g', 'Z'), ('h', 'Z'), ('i', 'Z'), ('j', 'Z'), ('k', 'Z'), ('l', 'Z'), ('m', 'Z'),
                   ('n', 'Z'), ('o', 'Z')])
-
+"""
 
 #G = nx.karate_club_graph()
 
 source = 'a'
-destination = 'Z'
+destination = 'l'
 
 
 # resistance distance
@@ -270,6 +270,7 @@ def optimize_coefs(orientation, initial_alpha, start, finish):
     # целевая функция для оптимизации
     def objective_function(alpha):
         return calc_variance(orientation, alpha, start, finish)[finish]
+        #return sum(calc_variance(orientation, alpha, start, finish).values())
 
     # число переменных - это число рёбер
     len_alpha = len(initial_alpha)
@@ -338,6 +339,7 @@ def optimize_orientation(graph, start, finish, initial_orientation, verbose=Fals
         initial_alpha = get_initial_alphas(orientation)
         optimal_alpha = optimize_coefs(orientation, initial_alpha, start, finish)
         return calc_variance(orientation, optimal_alpha, start, finish)[finish]
+        #return sum(calc_variance(orientation, optimal_alpha, start, finish).values())
 
     orientation = initial_orientation.copy()  # начинаем с начальной ориентировки
     # проверка корректности ориентировки
