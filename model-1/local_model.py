@@ -548,6 +548,8 @@ for src in G.nodes():
     #print("beta = ", beta)
     #print("variance = ", np.sum(beta ** 2, axis=1))
     potentials = calc_potentials(digraph, src, beta)
+    #print("potentials = ", potentials)
+    #print("variances = ", var_matrix[cnt - 1, :])
     sum_potentials += potentials
 print("\nМатрица дисперсий:")
 print(var_matrix)
@@ -560,6 +562,22 @@ for line in alpha_history:
     print(line)
 print("Средние alpha:")
 print(np.mean(np.vstack(alpha_history), axis=0))
+
+f_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица правых частей Lu = f
+for i in range(len(G.nodes)):  # i - строка матрицы дисперсий
+    # i-я вершина - это источник
+    for j in range(len(G.nodes)):  # j - столбец матрицы дисперсий
+        # перечислить всех соседей j-й вершины...
+        for _, v in G.edges(nodes_list[j]):
+            v_ind = nodes_list.index(v)
+            f_matrix[i, j] += var_matrix[i, v_ind] - var_matrix[i, j]
+print("f_matrix =")
+for i in range(len(G.nodes)):
+    for j in range(len(G.nodes)):
+        print("%.4f" % f_matrix[i, j], end=' ')
+    print()
+
+
 print("СУММАРНЫЙ ПОТЕНЦИАЛ", sum_potentials)
 avg_rhs = {}
 for u in digraph.nodes():
