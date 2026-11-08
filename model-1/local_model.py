@@ -30,7 +30,7 @@ G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 #                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-#G = nx.karate_club_graph()
+G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
 """
@@ -137,15 +137,17 @@ G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 5), (5, 6),
 
 #G = nx.krackhardt_kite_graph()
 
-
+"""
 G.add_nodes_from(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'])
 G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('d', 'f'),
                   ('e', 'g'), ('f', 'h'), ('g', 'h'), ('h', 'i'),
                   ('i', 'j'), ('i', 'k'), ('i', 'l'), ('j', 'k'),
                   ('l', 'm'), ('l', 'n'), ('l', 'o')])
+"""
 
+#G = nx.grid_graph(dim=(20, 20))
 
-source = 'a'
+source = 1   # 'a'
 
 
 
@@ -292,7 +294,7 @@ print(beta0)
 alpha = alpha0.copy()
 beta = beta0.copy()
 
-num_steps = 30
+num_steps = 100
 
 print("Обычная модель...")
 for step in range(num_steps):
@@ -400,6 +402,37 @@ for u, v, data in digraph.edges(data=True):
     if potentials[u_ind] < potentials[v_ind]:
         orientation.add_edge(u, v, num=data['num'])
 
+"""
+# Регуляризованный лапласиан...
+mu = 0.05  # параметр регуляризации
+nodes = list(G.nodes())
+L = nx.laplacian_matrix(G).toarray().astype(float)  # матрица Лапласа
+L += mu * np.diag(np.ones(len(nodes)))
+print("матрица", L)
+idx = {n: i for i, n in enumerate(nodes)}
+# граничные условия
+b = np.ones(len(nodes)) * mu  #np.zeros(len(nodes))
+for node, val in [(source, 0.0)]:
+    i = idx[node]
+    L[i] = 0
+    L[i][i] = 1
+    b[i] = val
+U = np.linalg.solve(L, b)
+numbering = {n: -U[idx[n]] for n in nodes}
+print("Узлы:", nodes)
+print("Потенциалы узлов:", (1 - U))
+print("Рассчитанные потенциалы:", U)
+for u in G.nodes():
+    #u_ind = G.nodes[u]['vert_num']
+    u_ind = nodes.index(u)
+    sum_currents = 0
+    for _, v, data in G.edges(u, data=True):
+        #v_ind = G.nodes[v]['vert_num']
+        v_ind = nodes.index(v)
+        sum_currents += U[v_ind] - U[u_ind]
+    print(f"Вершина {u}: сумма токов равна {sum_currents}")
+"""
+
 def calc_variance(orientation, alpha, start):
     """
     Вход: orientation - орграф (ориентировка)
@@ -487,7 +520,7 @@ for i in range(len(digraph.edges())):
 
 
 # Расчет матрицы дисперсий между всеми парами вершин...
-"""
+
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
 nodes_list = []  # все вершины графа в порядке перечисления
 cnt = 0
@@ -528,6 +561,7 @@ for line in alpha_history:
 print("Средние alpha:")
 print(np.mean(np.vstack(alpha_history), axis=0))
 print("СУММАРНЫЙ ПОТЕНЦИАЛ", sum_potentials)
+avg_rhs = {}
 for u in digraph.nodes():
     u_ind = digraph.nodes[u]['vert_num']
     sum_currents = 0
@@ -538,11 +572,12 @@ for u in digraph.nodes():
         #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
         #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
     print(f"Вершина {u}: сумма токов равна {sum_currents}")
+    avg_rhs[u] = sum_currents / len(G.nodes)
 
 #beta_mean = np.mean(np.vstack(beta_history), axis=1)
 #print("Средние beta:")
 #print(beta_mean)
-"""
+print("avg_rhs = ", avg_rhs)
 
 
 """
@@ -620,7 +655,8 @@ plt.savefig("fig2.eps", format='eps')
 # Показываем график
 plt.show()
 
-print(rhs)
+
+print("rhs = ", rhs)
 from matplotlib.colors import TwoSlopeNorm
 
 nx.set_node_attributes(orientation, rhs, "rhs")
@@ -655,6 +691,47 @@ cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.02)
 cbar.set_label("Значение узла")
 
 ax.set_title(f"Источник - {source}")
+ax.axis("off")
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+print("avg_rhs = ", avg_rhs)
+
+nx.set_node_attributes(G, avg_rhs, "avg_rhs")
+# --- 2. Нормализация вокруг нуля ---
+avg_rhs_min = min(avg_rhs.values())
+avg_rhs_max = max(avg_rhs.values())
+# TwoSlopeNorm делает так, чтобы 0 был ровно серединой палитры
+norm = TwoSlopeNorm(vmin=avg_rhs_min, vcenter=0.0, vmax=avg_rhs_max)
+cmap = plt.cm.coolwarm
+
+node_colors = [cmap(norm(avg_rhs[n])) for n in G.nodes]
+
+pos = nx.spring_layout(G, seed=42)
+
+fig, ax = plt.subplots(figsize=(9, 7))
+
+nodes = nx.draw_networkx_nodes(
+    G, pos,
+    node_color=node_colors,   # <-- список RGB(A) кортежей
+    node_size=450,
+    edgecolors="black",
+    linewidths=0.6,
+    ax=ax,
+)
+nx.draw_networkx_edges(G, pos, alpha=0.3, ax=ax)
+nx.draw_networkx_labels(G, pos, font_size=7, font_color="black", ax=ax)
+
+sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+sm.set_array([])  # формальность для совместимости
+cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.02)
+#cbar.set_label("Значение узла")
+
+#ax.set_title(f"Источник - {source}")
 ax.axis("off")
 plt.tight_layout()
 plt.show()
