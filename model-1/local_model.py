@@ -577,6 +577,22 @@ for i in range(len(G.nodes)):
         print("%.4f" % f_matrix[i, j], end=' ')
     print()
 
+v1 = 0
+v2 = 33
+cluster1 = []
+cluster2 = []
+print("кластеризация:")
+for i in range(len(G.nodes)):  # i - строка матрицы дисперсий
+    #if f_matrix[i, nodes_list.index(v1)] > f_matrix[i, nodes_list.index(v2)]:
+    if var_matrix[i, nodes_list.index(v1)] < var_matrix[i, nodes_list.index(v2)]:
+        cluster1.append(nodes_list[i])
+    else:
+        cluster2.append(nodes_list[i])
+    #print(i, f_matrix[i, nodes_list.index(v1)], f_matrix[i, nodes_list.index(v2)])
+    print(i, var_matrix[i, nodes_list.index(v1)], var_matrix[i, nodes_list.index(v2)])
+print("кластер 1 = ", cluster1)
+print("кластер 2 = ", cluster2)
+
 
 print("СУММАРНЫЙ ПОТЕНЦИАЛ", sum_potentials)
 avg_rhs = {}
