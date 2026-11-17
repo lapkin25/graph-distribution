@@ -30,12 +30,14 @@ G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 #                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-#G = nx.karate_club_graph()
+G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
+"""
 from analyze_graph import load_graph
 G, _ = load_graph("dolphins.gml")
 #print(G.nodes())
+"""
 
 #G = nx.dorogovtsev_goltsev_mendes_graph(4)
 
@@ -153,7 +155,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
 
 #G = nx.grid_graph(dim=(20, 20))
 
-source = 'Beak' # 1   # 'a'
+source = 1  #'Beak' # 'a'
 
 
 
@@ -851,7 +853,7 @@ plt.xlabel(r'$D_v$')
 plt.scatter(mean_variances, mean_rhs, s=100)
 #plt.xlabel('f_v')
 #plt.ylabel('f_v')
-plt.ylabel('r$f_v$')
+plt.ylabel(r'$f_v$')
 for x_coord, y_coord, label in zip(mean_variances, mean_rhs, map(str, range(1, len(G.nodes) + 1))):
     plt.text(x_coord, y_coord, label, fontsize=8)  # Размещаем текст
 plt.savefig("dep3.png")

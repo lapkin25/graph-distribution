@@ -36,7 +36,7 @@ def compute_centralities(G, nodes_list):
     df['current_flow_closeness'] = dict_to_list(nx.current_flow_closeness_centrality(G), nodes_list)
     df['current_flow_closeness_rank'] = calc_ranking(df['current_flow_closeness'])
 
-    df['betweenness'] = dict_to_list(nx.current_flow_betweenness_centrality(G), nodes_list)
+    df['betweenness'] = dict_to_list(nx.betweenness_centrality(G), nodes_list)
     df['betweenness_rank'] = calc_ranking(df['betweenness'])
 
     df['current_flow_betweenness'] = dict_to_list(nx.current_flow_betweenness_centrality(G), nodes_list)
