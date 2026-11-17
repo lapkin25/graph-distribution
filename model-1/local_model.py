@@ -30,11 +30,12 @@ G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 #                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-G = nx.karate_club_graph()
+#G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
-#from analyze_graph import load_graph
-#G, _ = load_graph("misc-football.mtx")
+from analyze_graph import load_graph
+G, _ = load_graph("dolphins.gml")
+#print(G.nodes())
 
 #G = nx.dorogovtsev_goltsev_mendes_graph(4)
 
@@ -152,7 +153,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
 
 #G = nx.grid_graph(dim=(20, 20))
 
-source = 1   # 'a'
+source = 'Beak' # 1   # 'a'
 
 
 
@@ -299,7 +300,7 @@ print(beta0)
 alpha = alpha0.copy()
 beta = beta0.copy()
 
-num_steps = 100
+num_steps = 100 #100
 
 print("Обычная модель...")
 for step in range(num_steps):
@@ -696,20 +697,23 @@ for i, (val, val2) in enumerate(zip(avg_beta, avg_beta_2)):
 """
 
 
-"""
+
 import pandas as pd
 from centralities import compute_centralities, calc_ranking
 
 df = pd.DataFrame()
 df['vert'] = nodes_list
-df['our'] = np.mean(var_matrix, axis=1)
-df['our_rank'] = calc_ranking(df['our'], method="descending")
+df['vert_no'] = list(range(1, len(nodes_list) + 1))
+df['D_v'] = mean_variances
+df['f_v'] = mean_rhs
+df['our_rank_D_v'] = calc_ranking(df['D_v'], method="descending")
+df['our_rank_f_v'] = calc_ranking(df['f_v'])
 
 df1 = compute_centralities(G, nodes_list)
 df = pd.concat([df, df1], axis=1)
 
 df.to_excel('result.xlsx', sheet_name='Лист1', index=False)
-"""
+
 
 import matplotlib.pyplot as plt
 
@@ -732,7 +736,7 @@ nx.draw(
 # Теперь добавляем метки
 #nx.draw_networkx_labels(orientation, pos=pos, labels=dict(zip(range(0, len(orientation.nodes)), range(1,len(orientation.nodes) + 1))), font_size=10)
 
-plt.savefig("fig2.eps", format='eps')
+#plt.savefig("fig2.eps", format='eps')
 # Показываем график
 plt.show()
 
@@ -805,8 +809,8 @@ nodes = nx.draw_networkx_nodes(
     ax=ax,
 )
 nx.draw_networkx_edges(G, pos, alpha=0.3, ax=ax)
-nx.draw_networkx_labels(G, pos, font_size=7, font_color="black", ax=ax)
-#nx.draw_networkx_labels(G, pos=pos, labels=dict(zip(range(0, len(G.nodes)), range(1,len(G.nodes) + 1))), font_size=10)
+#nx.draw_networkx_labels(G, pos, font_size=7, font_color="black", ax=ax)
+nx.draw_networkx_labels(G, pos=pos, labels=dict(zip(G.nodes, range(1,len(G.nodes) + 1))), font_size=10)
 
 
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -817,19 +821,38 @@ cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.02)
 #ax.set_title(f"Источник - {source}")
 ax.axis("off")
 plt.tight_layout()
+plt.savefig("avg1_no.png")
 plt.show()
 
 
 #plt.scatter(mean_variances, mean_rhs)
 #plt.scatter(mean_variances, mean_price)
 
+fig, ax = plt.subplots(figsize=(9, 7))
+
 #plt.title('Базовая диаграмма рассеяния')
-plt.xlabel('D_v')
+plt.xlabel(r'$D_v$')
 colors = [cmap(norm(mean_rhs[i])) for i in range(len(G.nodes))]
 plt.scatter(mean_variances, mean_price, c=colors, s=100)
 #plt.xlabel('f_v')
 #plt.ylabel('f_v')
-plt.ylabel('p_v')
+plt.ylabel(r'$p_v$')
 for x_coord, y_coord, label in zip(mean_variances, mean_price, map(str, range(1, len(G.nodes) + 1))):
     plt.text(x_coord, y_coord, label, fontsize=8)  # Размещаем текст
+plt.savefig("dep2.png")
+plt.show()
+
+
+fig, ax = plt.subplots(figsize=(9, 7))
+
+#plt.title('Базовая диаграмма рассеяния')
+plt.xlabel(r'$D_v$')
+#colors = [cmap(norm(mean_rhs[i])) for i in range(len(G.nodes))]
+plt.scatter(mean_variances, mean_rhs, s=100)
+#plt.xlabel('f_v')
+#plt.ylabel('f_v')
+plt.ylabel('r$f_v$')
+for x_coord, y_coord, label in zip(mean_variances, mean_rhs, map(str, range(1, len(G.nodes) + 1))):
+    plt.text(x_coord, y_coord, label, fontsize=8)  # Размещаем текст
+plt.savefig("dep3.png")
 plt.show()
