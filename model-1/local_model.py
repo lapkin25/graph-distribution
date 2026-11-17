@@ -33,6 +33,11 @@ G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
 G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
+#from analyze_graph import load_graph
+#G, _ = load_graph("misc-football.mtx")
+
+#G = nx.dorogovtsev_goltsev_mendes_graph(4)
+
 """
 # пример из статьи: Li et al. Efficient algorithms for finding diversified
 # top-k structural hole spanners in social networks (2022)
@@ -169,8 +174,8 @@ def get_initial_alphas(graph, start):
             ind = data['num']  # индекс ребра (v, u)
             alpha[ind] = 1. / num_incoming
     # пока заглушка - нулевая матрица beta
-    #beta = np.zeros((len(graph.nodes()), len(graph.edges())))
-    beta = np.ones((len(graph.nodes()), len(graph.edges())))
+    beta = np.zeros((len(graph.nodes()), len(graph.edges())))
+    #beta = np.ones((len(graph.nodes()), len(graph.edges())))
     beta[graph.nodes[start]['vert_num'], :] = np.zeros(len(graph.edges()))
     for v, _, data in graph.in_edges(start, data=True):
         alpha[data['num']] = 0.0
@@ -313,6 +318,9 @@ print("variance = ", np.sum(beta ** 2, axis=1))
 for i in range(len(digraph.edges())):
     print(list(digraph.edges())[i], '->', alpha[i])
 
+for i, v in enumerate(digraph.nodes):
+    print(f"beta[{v}] = {beta[i, :]}")
+
 """
 potentials = np.zeros(len(digraph.nodes))
 source_ind = digraph.nodes[source]['vert_num']
@@ -356,7 +364,7 @@ def calc_potentials(digraph, source, beta):
         print(f"Вершина {u}: сумма токов равна {sum_currents}; входящие {sum_in_currents}, исходящие {sum_out_currents}")
         for _, v in digraph.out_edges(u):
             edge2_ind = digraph.edges[v, u]['num']
-            print(f"   проверка: {alpha[edge2_ind]} == {beta[u_ind][edge2_ind] / sum_in_currents}")
+            print(f"   проверка (св-во 1?): {alpha[edge2_ind]} == {beta[u_ind][edge2_ind] / sum_in_currents}")
         sum_currents_sources += sum_currents
     print("Сумма правых частей =", sum_currents_sources)
     """
@@ -519,6 +527,14 @@ for i in range(len(digraph.edges())):
 """
 
 
+
+print("ПЕРЕЧИСЛЕНИЕ ВСЕХ РЁБЕР...")
+for u, v, data in digraph.edges(data=True):
+    print(u, v, "->", f"beta[{v}][{u},{v}] = {beta[v][data['num']]}", f"alpha[{u},{v}] = {alpha[data['num']]}")
+
+
+
+
 # Расчет матрицы дисперсий между всеми парами вершин...
 
 var_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица дисперсий
@@ -563,6 +579,25 @@ for line in alpha_history:
 print("Средние alpha:")
 print(np.mean(np.vstack(alpha_history), axis=0))
 
+
+print("Узлы:", nodes_list)
+print("МАТРИЦА")  # ЦЕН ДЕЦЕНТРАЛИЗАЦИИ")
+sum_rows = np.zeros(len(digraph.nodes))
+for s in digraph.nodes():
+    row = []
+    for v in digraph.nodes():
+        s_ind = digraph.nodes[s]['vert_num']
+        v_ind = digraph.nodes[v]['vert_num']
+        r = var_matrix[s_ind, v_ind]
+        d = nx.resistance_distance(G, s, v)
+        p = r / d if d != 0 else 0
+        row.append(p)
+        print("%.2f" % p, end=' ')
+    sum_rows += np.array(row)
+    print()
+print("avg price = ", sum_rows / len(digraph.nodes))
+mean_price = sum_rows / len(digraph.nodes)
+
 f_matrix = np.zeros((len(G.nodes), len(G.nodes)))  # матрица правых частей Lu = f
 for i in range(len(G.nodes)):  # i - строка матрицы дисперсий
     # i-я вершина - это источник
@@ -577,6 +612,7 @@ for i in range(len(G.nodes)):
         print("%.4f" % f_matrix[i, j], end=' ')
     print()
 
+"""
 v1 = 0
 v2 = 33
 cluster1 = []
@@ -592,7 +628,7 @@ for i in range(len(G.nodes)):  # i - строка матрицы дисперс�
     print(i, var_matrix[i, nodes_list.index(v1)], var_matrix[i, nodes_list.index(v2)])
 print("кластер 1 = ", cluster1)
 print("кластер 2 = ", cluster2)
-
+"""
 
 print("СУММАРНЫЙ ПОТЕНЦИАЛ", sum_potentials)
 avg_rhs = {}
@@ -612,6 +648,17 @@ for u in digraph.nodes():
 #print("Средние beta:")
 #print(beta_mean)
 print("avg_rhs = ", avg_rhs)
+
+
+# усредняем по источникам (среднее по столбцам матрицы)
+mean_variances = np.mean(var_matrix, axis=0)
+mean_rhs = np.mean(f_matrix, axis=0)
+print("Узлы: ", nodes_list)
+print("mean_variances =", mean_variances)
+print("mean_rhs =", mean_rhs)
+
+
+
 
 
 """
@@ -674,7 +721,7 @@ nx.draw(
     #G,
     orientation,
     pos,
-    with_labels=True,  # Показывать метки узлов  # убрать, если надо поменять метки
+    #with_labels=True,  # Показывать метки узлов  # убрать, если надо поменять метки
     node_color="lightblue",  # Цвет узлов
     node_size=600,  # Размер узлов
     font_size=12,  # Размер шрифта меток
@@ -683,7 +730,7 @@ nx.draw(
 )
 
 # Теперь добавляем метки
-#nx.draw_networkx_labels(G, pos=pos, labels=dict(zip(range(0, 10), range(1,11))), font_size=10)
+#nx.draw_networkx_labels(orientation, pos=pos, labels=dict(zip(range(0, len(orientation.nodes)), range(1,len(orientation.nodes) + 1))), font_size=10)
 
 plt.savefig("fig2.eps", format='eps')
 # Показываем график
@@ -759,6 +806,8 @@ nodes = nx.draw_networkx_nodes(
 )
 nx.draw_networkx_edges(G, pos, alpha=0.3, ax=ax)
 nx.draw_networkx_labels(G, pos, font_size=7, font_color="black", ax=ax)
+#nx.draw_networkx_labels(G, pos=pos, labels=dict(zip(range(0, len(G.nodes)), range(1,len(G.nodes) + 1))), font_size=10)
+
 
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 sm.set_array([])  # формальность для совместимости
@@ -768,4 +817,19 @@ cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.02)
 #ax.set_title(f"Источник - {source}")
 ax.axis("off")
 plt.tight_layout()
+plt.show()
+
+
+#plt.scatter(mean_variances, mean_rhs)
+#plt.scatter(mean_variances, mean_price)
+
+#plt.title('Базовая диаграмма рассеяния')
+plt.xlabel('D_v')
+colors = [cmap(norm(mean_rhs[i])) for i in range(len(G.nodes))]
+plt.scatter(mean_variances, mean_price, c=colors, s=100)
+#plt.xlabel('f_v')
+#plt.ylabel('f_v')
+plt.ylabel('p_v')
+for x_coord, y_coord, label in zip(mean_variances, mean_price, map(str, range(1, len(G.nodes) + 1))):
+    plt.text(x_coord, y_coord, label, fontsize=8)  # Размещаем текст
 plt.show()

@@ -9,8 +9,8 @@ G = nx.Graph()
 #G.add_nodes_from([1, 2, 3, 4])
 #G.add_edges_from([(1, 2), (1, 3), (2, 4), (3, 4), (2, 3)])
 
-G.add_nodes_from([1, 2, 3])
-G.add_edges_from([(1, 2), (1, 3), (2, 3)])
+#G.add_nodes_from([1, 2, 3])
+#G.add_edges_from([(1, 2), (1, 3), (2, 3)])
 
 """
 G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -37,6 +37,8 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
                   ('n', 'Z'), ('o', 'Z')])
 """
 
+G = nx.krackhardt_kite_graph()
+
 #G = nx.karate_club_graph()
 
 source = 1   #'a'
@@ -57,6 +59,12 @@ for u in G.nodes():
         sum_currents += dist[v] - dist[u]
     print(f"Вершина {u}: сумма токов равна {sum_currents}")
 """
+print(list(G.nodes))
+for s in G.nodes():
+    for t in G.nodes():
+        r = nx.resistance_distance(G, s, t)
+        print("%.2f" % r, end=' ')
+    print()
 
 
 """
@@ -439,11 +447,14 @@ print(f"Источник: {source}\nКонечная вершина: {destinatio
 print("Коэффициенты alpha на ориентированных рёбрах:")
 for i, (u, v) in enumerate(optimal_orientation.edges()):
     print(u, v, "->", opt_alpha[G.edges[u, v]['num']])
-var = calc_variance(optimal_orientation, opt_alpha, source, destination)
+var, opt_beta = calc_variance(optimal_orientation, opt_alpha, source, destination, return_beta=True)
 print("Дисперсии на вершинах:")
 for v in optimal_orientation.nodes():
     print(v, "->", var[v], "  => resistance distance(s, v) =", nx.resistance_distance(G, source, v))
 
+print(edges_list)
+print("beta =")
+print(opt_beta)
 
 #print(optimize_coefs(orientation0, alpha0, 1, 4))
 #print(calc_variance(orientation0, [1., 1., 0.5, 0., 0.5], 1, 4))
@@ -510,6 +521,7 @@ def calc_potentials(digraph, source, destination, alpha):
             u_ind = nodes.index(u)
             print(f"разность потенциалов = {(U[u_ind] - U[v_ind])};  ток = {beta[destination][edge_ind]}")
             #print(f"разность потенциалов = {(variances[v] - variances[u])};  ток = {beta[v][edge_ind]}")
+            print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v][edge_ind]}")
             #print(f"   ребро {u}, {v} -> beta[{v}][{u}, {v}] = {beta[v][edge_ind]}; beta[{u}][{v}, {u}] = {beta[u][edge2_ind]}")
             #print(f"      ребро {u}, {v} -> alpha[({u}, {v})] = {alpha[edge_ind]}")
             #print(f"      ребро {v}, {u} -> alpha[({v}, {u})] = {alpha[edge2_ind]}")
