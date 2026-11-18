@@ -30,14 +30,19 @@ G.add_edges_from([(1, 2), (1, 3), (2, 3), (3, 4), (3, 5), (4, 5)])
 #G.add_edges_from([(1, 2), (2, 3), (2, 4), (4, 5), (3, 5),
 #                  (5, 6), (6, 7), (7, 8), (8, 9), (1, 9), (4, 8)])
 
-G = nx.karate_club_graph()
+#G = nx.karate_club_graph()
 # https://networkx.org/documentation/stable/auto_examples/algorithms/plot_girvan_newman.html
 
-"""
+
 from analyze_graph import load_graph
 G, _ = load_graph("dolphins.gml")
-#print(G.nodes())
-"""
+#G, _ = load_graph("Krackhardt-High-Tech_multiplex.edges")
+#G, _ = load_graph("Cohen/small_final/cohen_frazzini_mini.edges")
+print(G.nodes())
+
+
+#G = nx.florentine_families_graph()
+#print(G.nodes)
 
 #G = nx.dorogovtsev_goltsev_mendes_graph(4)
 
@@ -155,7 +160,7 @@ G.add_edges_from([('a', 'd'), ('b', 'd'), ('b', 'e'), ('c', 'e'), ('d', 'e'), ('
 
 #G = nx.grid_graph(dim=(20, 20))
 
-source = 1  #'Beak' # 'a'
+source = 'Beak' #'Medici'  # 'a'
 
 
 
@@ -580,7 +585,9 @@ print("Коэффициенты alpha:")
 for line in alpha_history:
     print(line)
 print("Средние alpha:")
-print(np.mean(np.vstack(alpha_history), axis=0))
+avg_alpha = np.mean(np.vstack(alpha_history), axis=0)
+print(avg_alpha.shape)
+print(avg_alpha)
 
 
 print("Узлы:", nodes_list)
@@ -645,7 +652,7 @@ for u in digraph.nodes():
         #edge2_ind = digraph.edges[v, u]['num']  # индекс ребра (v, u)
         #sum_currents += beta[v_ind][edge_ind] - beta[u_ind][edge2_ind]
     print(f"Вершина {u}: сумма токов равна {sum_currents}")
-    avg_rhs[u] = sum_currents / len(G.nodes)
+    avg_rhs[u] = sum_currents / len(G.nodes)  # ??? / digraph.degree(u)
 
 #beta_mean = np.mean(np.vstack(beta_history), axis=1)
 #print("Средние beta:")
@@ -655,7 +662,7 @@ print("avg_rhs = ", avg_rhs)
 
 # усредняем по источникам (среднее по столбцам матрицы)
 mean_variances = np.mean(var_matrix, axis=0)
-mean_rhs = np.mean(f_matrix, axis=0)
+mean_rhs = np.mean(f_matrix, axis=0) #/ np.array([G.degree(v) for v in nodes_list])
 print("Узлы: ", nodes_list)
 print("mean_variances =", mean_variances)
 print("mean_rhs =", mean_rhs)
@@ -797,6 +804,9 @@ norm = TwoSlopeNorm(vmin=avg_rhs_min, vcenter=0.0, vmax=avg_rhs_max)
 cmap = plt.cm.coolwarm
 
 node_colors = [cmap(norm(avg_rhs[n])) for n in G.nodes]
+
+# расчет сообществ в графе
+#node_colors = [cmap(norm(avg_rhs_max if var_matrix[nodes_list.index('Trigger'), nodes_list.index(n)] < var_matrix[nodes_list.index('Jet'), nodes_list.index(n)] else avg_rhs_min)) for n in G.nodes]
 
 pos = nx.spring_layout(G, seed=42)
 
